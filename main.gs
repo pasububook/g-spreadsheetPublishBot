@@ -5,6 +5,13 @@ function onOpen() {
   menu.addToUi();
 }
 
-function publish_and_send_google_chat(){
-  console.log("good")
+// メニュー: Google Chat に送信
+function publish_and_send_google_chat() {
+  // 現在開かれているスプレッドシートのシート名とスプレッドシートIDを取得
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = ss.getActiveSheet().getName();
+  const spreadsheetId = ss.getId();
+
+  Logger.log('シート名: ' + sheetName);
+  Logger.log('スプレッドシートID: ' + spreadsheetId);
 }
