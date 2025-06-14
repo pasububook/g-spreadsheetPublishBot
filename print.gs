@@ -22,7 +22,7 @@ function copyAndFormatSheet(spreadsheetId, sheetName) {
   const day = now.getDate().toString().padStart(2, '0');
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
-  const copiedSheetName = `[print]${sheetName} - ${year}${month}${day}${hours}${minutes}`;
+  const copiedSheetName = `[print]${sheetName} - ${year}${month}${day}_${hours}${minutes}`;
 
   // copyTo() メソッドは、デフォルトで書式設定（セル結合、枠線、背景色など）をすべて継承します。
   const copiedSheet = originalSheet.copyTo(ss);
