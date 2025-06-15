@@ -28,19 +28,18 @@ function copyAndFormatSheet(spreadsheetId, sheetName) {
   const copiedSheet = originalSheet.copyTo(ss);
   copiedSheet.setName(copiedSheetName);
 
-  // 2. 指定されたシートの背景色を全て削除し、透明にする
-  // getDataRange() でシート全体のデータ範囲を取得し、setBackground(null) で背景色を透明にします。
-  // これにより、他の書式（セル結合、枠線、フォントなど）は保持されます。
+  // 2. 指定されたシートの背景色を全て白色にする
   const range = copiedSheet.getDataRange();
   if (range.getNumRows() > 0 && range.getNumColumns() > 0) {
-    range.setBackground(null); // null を設定することで背景が透明になります
+    range.setBackground('white'); // null ではなく 'white' に変更
   }
 
   // 3. 指定されたシートの文字色を全て黒色にする
-  // getDataRange() で取得した範囲の文字色を黒に設定します。
   if (range.getNumRows() > 0 && range.getNumColumns() > 0) {
     range.setFontColor("black");
   }
+
+  copiedSheet.setConditionalFormatRules([]);
 
   return copiedSheet.getName();
 }
