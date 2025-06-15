@@ -17,14 +17,20 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
     }
 
     // PDFエクスポートオプションを設定
-    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=pdf` +
+    // 参考: https://developers.google.com/sheets/api/guides/export#export_a_spreadsheet_as_a_pdf
+    let url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=pdf` +
                 `&gid=${sheet.getSheetId()}` +
                 `&portrait=true` + // 縦向き (必要に応じて変更)
                 `&fitw=true` +     // ページ幅に合わせる (必要に応じて変更)
                 `&top_margin=0.75` + // 余白 (必要に応じて変更)
                 `&bottom_margin=0.75` +
                 `&left_margin=0.75` +
-                `&right_margin=0.75`;
+                `&right_margin=0.75` +
+                `&printtitle=true` + // スプレッドシートのタイトルをヘッダーに挿入
+                `&pagenum=CENTER`;    // ページ番号をフッターに挿入 (より汎用的な設定)
+
+    // 注: ヘッダーの右にエクスポート日時を挿入する、またはヘッダーの中心にワークブックのタイトルを挿入する
+    // 直接的なURLパラメータはありません。`printtitle=true`は通常左上にタイトルを挿入します。
 
     const token = ScriptApp.getOAuthToken();
     const response = UrlFetchApp.fetch(url, {
@@ -42,13 +48,15 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
 
     let fileName = sheetName;
     if (includeTimestamp) {
+      // ファイル名にエクスポート日時を含める
       const now = new Date();
       const year = now.getFullYear();
       const month = ('0' + (now.getMonth() + 1)).slice(-2);
       const day = ('0' + now.getDate()).slice(-2);
       const hours = ('0' + now.getHours()).slice(-2);
       const minutes = ('0' + now.getMinutes()).slice(-2);
-      fileName += ` - ${year}${month}${day}_${hours}${minutes}`;
+      const seconds = ('0' + now.getSeconds()).slice(-2);
+      fileName += ` - ${year}${month}${day}_${hours}${minutes}${seconds}`;
     }
 
     const folder = DriveApp.getFolderById(folderId);
