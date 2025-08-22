@@ -1,12 +1,28 @@
+// onOpen関数は変更不要です。
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
-  menu.addItem('Google Chat に送信', 'publish_and_send_google_chat');
+  menu.addItem('Google Chat に送信', 'showChangesDialog'); // 関数名を変更
   menu.addToUi();
 }
 
-// メニュー: Google Chat に送信
-function publish_and_send_google_chat() {
+// ユーザーに変更内容を尋ねるダイアログを表示する関数
+function showChangesDialog() {
+  const html = HtmlService.createTemplateFromFile('ChangesInput')
+      .evaluate()
+      .setWidth(400)
+      .setHeight(300);
+  SpreadsheetApp.getUi().showModalDialog(html, '変更内容を記述');
+}
+
+// メニュー: Google Chat に送信 (変更内容の処理を含む)
+function processAndSend(changes) {
+  // ユーザーがキャンセルした場合や何も入力しなかった場合の処理
+  if (!changes) {
+    SpreadsheetApp.getUi().alert('出版がキャンセルされました。');
+    return;
+  }
+  
   const scriptProperties = PropertiesService.getScriptProperties();
   const PARENT_FOLDER_ID = scriptProperties.getProperty("PARENT_FOLDER_ID");
   const GOOGLE_CHAT_WEBHOOK_URL = scriptProperties.getProperty("GOOGLE_CHAT_WEBHOOK_URL");
@@ -35,6 +51,8 @@ function publish_and_send_google_chat() {
   const mono_data = exportSheetAsPdf(spreadsheetId, mono_sheet_name, folder_id, false)
 
   // Google Chat で送信
-  google_chat_message = sheetName + "が更新されました\nカラー版: " + color_data.sharingUrl + "\nモノクローム版: " + mono_data.sharingUrl
-  google_chat_webhook(google_chat_message, GOOGLE_CHAT_WEBHOOK_URL)
+  const google_chat_message = sheetName + "が更新されました\n変更内容:\n" + changes + "\nカラー版: " + color_data.sharingUrl + "\nモノクローム版: " + mono_data.sharingUrl;
+  google_chat_webhook(google_chat_message, GOOGLE_CHAT_WEBHOOK_URL);
+  
+  SpreadsheetApp.getUi().alert('出版が完了しました。');
 }
