@@ -51,8 +51,15 @@ function processAndSend(changes) {
   const mono_data = exportSheetAsPdf(spreadsheetId, mono_sheet_name, folder_id, false)
 
   // Google Chat で送信
-  const google_chat_message = sheetName + "が更新されました\n変更内容:\n" + changes + "\nカラー版: " + color_data.sharingUrl + "\nモノクローム版: " + mono_data.sharingUrl;
-  google_chat_webhook(google_chat_message, GOOGLE_CHAT_WEBHOOK_URL);
+  const message_content = {
+    "sheetName": sheetName,
+    "changes": changes,
+    "download": {
+      "color": color_data.sharingUrl,
+      "mono": mono_data.sharingUrl
+    }
+  }
+  google_chat_webhook(message_content, GOOGLE_CHAT_WEBHOOK_URL);
   
   SpreadsheetApp.getUi().alert('出版が完了しました。');
 }

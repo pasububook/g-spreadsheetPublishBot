@@ -43,15 +43,3 @@ function copyAndFormatSheet(spreadsheetId, sheetName) {
 
   return copiedSheet.getName();
 }
-
-function test_copyAndFormatSheet() {
-  const spreadsheetId = "あなたのGoogle Spreadsheet IDをここに貼り付けてください"; // 例: "1abcdefgHIJKLMNOPqrstuvwxyz1234567890"
-  const sheetName = "コピーしたいシートの名前"; // 例: "OriginalData"
-
-  try {
-    const newSheetName = copyAndFormatSheet(spreadsheetId, sheetName);
-    Logger.log(`新しいシートが作成されました: ${newSheetName}`);
-  } catch (e) {
-    Logger.log(`エラーが発生しました: ${e.message}`);
-  }
-}
