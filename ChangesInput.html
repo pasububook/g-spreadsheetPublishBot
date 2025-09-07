@@ -78,6 +78,16 @@
           })
           .processAndSend(changes);
       }
+
+      document.getElementById('changesInput').addEventListener('keydown', function(event) {
+        // CtrlキーまたはCmdキー(Mac)が押されながらEnterキーが押されたかチェック
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          // デフォルトのEnterキーの動作（改行）をキャンセル
+          event.preventDefault();
+          // 送信関数を呼び出し
+          sendChanges();
+        }
+      });
     </script>
   </body>
 </html>
