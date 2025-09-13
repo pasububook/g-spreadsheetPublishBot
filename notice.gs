@@ -1,19 +1,22 @@
 /**
  * Google Chat にメッセージを送信
+ * 
+ * @param {string} messageContents - メッセージの内容
+ * @param {string} spreadsheetId - webhook の URL。
  */
-function google_chat_webhook(message_content, webhookUrl) {
+function googlechatWebhook(messageContents, webhookUrl) {
   // 変更内容
   let changesOutput = ""
-  for (let i = 0; i < message_content.changes.length; i++) {
-    changesOutput += " - " + message_content.changes[i] + "\n"
+  for (let i = 0; i < messageContents.changes.length; i++) {
+    changesOutput += " - " + messageContents.changes[i] + "\n"
   }
 
-  const google_chat_message = "「" + message_content.sheetName + "」が更新されました\n変更内容:\n" + changesOutput + "カラー版: " + message_content.download.color + "\nモノクローム版: " + message_content.download.mono;
+  const googlechatMessage = "「" + messageContents.sheetName + "」が更新されました\n変更内容:\n" + changesOutput + "カラー版: " + messageContents.download.color + "\nモノクローム版: " + messageContents.download.mono;
 
   const options = {
     "method": "post",
     "headers": {"Content-Type": "application/json; charset=UTF-8"},
-    "payload": JSON.stringify({"text": google_chat_message})
+    "payload": JSON.stringify({"text": googlechatMessage})
   };
   const response = UrlFetchApp.fetch(webhookUrl, options);
   console.log(response);

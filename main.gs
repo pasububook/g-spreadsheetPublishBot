@@ -59,7 +59,7 @@ function processAndSend(changes) {
       "mono": mono_data.sharingUrl
     }
   }
-  google_chat_webhook(message_content, GOOGLE_CHAT_WEBHOOK_URL);
+  googlechatWebhook(message_content, GOOGLE_CHAT_WEBHOOK_URL);
   
   SpreadsheetApp.getUi().alert('出版が完了しました。');
 }
