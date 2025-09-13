@@ -2,7 +2,13 @@
  * Google Chat にメッセージを送信
  */
 function google_chat_webhook(message_content, webhookUrl) {
-  const google_chat_message = "「" + message_content.sheetName + "」が更新されました\n変更内容:\n" + message_content.changes + "\nカラー版: " + message_content.download.color + "\nモノクローム版: " + message_content.download.mono;
+  // 変更内容
+  let changesOutput = ""
+  for (let i = 0; i < message_content.changes.length; i++) {
+    changesOutput += " - " + message_content.changes[i] + "\n"
+  }
+
+  const google_chat_message = "「" + message_content.sheetName + "」が更新されました\n変更内容:\n" + changesOutput + "カラー版: " + message_content.download.color + "\nモノクローム版: " + message_content.download.mono;
 
   const options = {
     "method": "post",
