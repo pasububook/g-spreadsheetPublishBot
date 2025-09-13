@@ -4,7 +4,7 @@
  * @param {string} messageContents - メッセージの内容
  * @param {string} spreadsheetId - webhook の URL。
  */
-function googlechatWebhook(messageContents, webhookUrl) {
+function sendGooglechat(messageContents, webhookUrl) {
   // 変更内容
   let changesOutput = ""
   for (let i = 0; i < messageContents.changes.length; i++) {
