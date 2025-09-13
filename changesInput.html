@@ -62,9 +62,18 @@
         publishButton.disabled = true;
         publishButton.textContent = '送信中...'; // ボタンのテキストを変更してユーザーにフィードバック
         
-        const changes = document.getElementById('changesInput').value;
+        const changesTxt = document.getElementById('changesInput').value;
         const statusDiv = document.getElementById('status');
         
+        let changes = []
+        if (String(changesTxt).includes('\n')) {
+          changes = changesTxt.split('\n');
+        } else if (String(changesTxt).includes(',')) {
+          changes = changesTxt.split(',');
+        } else {
+          changes = [changesTxt];
+        }
+
         // Google Apps Scriptの関数を呼び出してデータを渡す
         google.script.run
           .withSuccessHandler(function() {
@@ -78,6 +87,16 @@
           })
           .processAndSend(changes);
       }
+
+      document.getElementById('changesInput').addEventListener('keydown', function(event) {
+        // CtrlキーまたはCmdキー(Mac)が押されながらEnterキーが押されたかチェック
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          // デフォルトのEnterキーの動作（改行）をキャンセル
+          event.preventDefault();
+          // 送信関数を呼び出し
+          sendChanges();
+        }
+      });
     </script>
   </body>
 </html>
