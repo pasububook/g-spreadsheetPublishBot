@@ -10,9 +10,9 @@ function onOpen() {
 function showChangesDialog() {
   const html = HtmlService.createTemplateFromFile('changesInput')
       .evaluate()
-      .setWidth(400)
-      .setHeight(300);
-  SpreadsheetApp.getUi().showModalDialog(html, '変更内容を記述');
+      .setTitle('変更内容を記述')
+      .setWidth(400); // 必要に応じて幅を調整
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
