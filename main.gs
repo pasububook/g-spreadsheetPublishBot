@@ -8,7 +8,7 @@ function onOpen() {
 
 // ユーザーに変更内容を尋ねるダイアログを表示する関数
 function showChangesDialog() {
-  const html = HtmlService.createTemplateFromFile('ChangesInput')
+  const html = HtmlService.createTemplateFromFile('changesInput')
       .evaluate()
       .setWidth(400)
       .setHeight(300);
