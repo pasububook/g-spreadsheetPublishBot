@@ -83,7 +83,7 @@ function sendGooglechat(messageContents, webhookUrl) {
     "payload": JSON.stringify({
       "text": textMessage,
       "cardsV2": [{
-        "cardId": "unique-card-id", // Todo: 各カードに一意のIDを設定する
+        "cardId": Utilities.getUuid(), // Todo: 各カードに一意のIDを設定する
         "card": cardMessage
       }]
     })
