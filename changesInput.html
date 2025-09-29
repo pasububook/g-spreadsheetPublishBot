@@ -51,16 +51,16 @@
 - レイアウトの調整
 - バグの修正"></textarea>
     <div class="button-container">
-      <button id="publishButton" onclick="sendChanges()">出版</button>
+      <button id="publishButton" onclick="saveChanges()">保存</button>
       <button onclick="google.script.host.close()">キャンセル</button>
     </div>
     <div id="status"></div>
     <script>
-      function sendChanges() {
+      function saveChanges() {
         // 出版ボタンを取得し、処理中は無効にする
         const publishButton = document.getElementById('publishButton');
         publishButton.disabled = true;
-        publishButton.textContent = '送信中...'; // ボタンのテキストを変更してユーザーにフィードバック
+        publishButton.textContent = '保存中...'; // ボタンのテキストを変更してユーザーにフィードバック
         
         const changesTxt = document.getElementById('changesInput').value;
         const statusDiv = document.getElementById('status');
@@ -77,15 +77,15 @@
         // Google Apps Scriptの関数を呼び出してデータを渡す
         google.script.run
           .withSuccessHandler(function() {
-            statusDiv.textContent = '送信完了';
+            statusDiv.textContent = '保存完了';
             google.script.host.close(); // 成功したらダイアログを閉じる
           })
           .withFailureHandler(function(error) {
             statusDiv.textContent = 'エラーが発生しました: ' + error.message;
             publishButton.disabled = false; // エラー時はボタンを再度有効にする
-            publishButton.textContent = '出版';
+            publishButton.textContent = '保存';
           })
-          .processAndSend(changes);
+          .saveCommitRevision(changes);
       }
 
       document.getElementById('changesInput').addEventListener('keydown', function(event) {
@@ -94,7 +94,7 @@
           // デフォルトのEnterキーの動作（改行）をキャンセル
           event.preventDefault();
           // 送信関数を呼び出し
-          sendChanges();
+          saveChanges();
         }
       });
     </script>

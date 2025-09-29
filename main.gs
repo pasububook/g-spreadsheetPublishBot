@@ -1,18 +1,32 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
-  menu.addItem('変更内容を登録', 'commitRevision')
+  menu.addItem('変更内容を登録', 'showCommitRevision')
   menu.addItem('Google Chat に送信', 'mergeMain');
   menu.addToUi();
 }
 
 // ユーザーに変更内容を尋ねるダイアログを表示する関数
-function showChangesDialog() {
+function showCommitRevision() {
   const html = HtmlService.createTemplateFromFile('changesInput')
       .evaluate()
       .setTitle('変更内容を記述')
       .setWidth(400); // 必要に応じて幅を調整
   SpreadsheetApp.getUi().showSidebar(html);
+}
+
+// 変更内容の保存
+function saveCommitRevision(changes) {
+  const activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const changelogSheet = activeSpreadsheet.getSheetByName('.changelog');
+  const editorEmail = Session.getActiveUser().getEmail();
+
+  var changelogSheet_array = []
+  for (let i = 0; i < changes.length; i++) {
+    changelogSheet_array.push([editorEmail, changes[i]])
+  }
+
+  changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changes.length, 2).setValues(changelogSheet_array)
 }
 
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
