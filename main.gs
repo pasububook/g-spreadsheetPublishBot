@@ -21,12 +21,14 @@ function saveCommitRevision(changes) {
   const changelogSheet = activeSpreadsheet.getSheetByName('.changelog');
   const editorEmail = Session.getActiveUser().getEmail();
 
+  const timeStamp = new Date()
+
   var changelogSheet_array = []
   for (let i = 0; i < changes.length; i++) {
-    changelogSheet_array.push([editorEmail, changes[i]])
+    changelogSheet_array.push([timeStamp, editorEmail, changes[i]])
   }
 
-  changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changes.length, 2).setValues(changelogSheet_array)
+  changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
 }
 
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
