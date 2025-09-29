@@ -25,7 +25,7 @@ function saveCommitRevision(changes) {
 
   var changelogSheet_array = []
   for (let i = 0; i < changes.length; i++) {
-    changelogSheet_array.push([timeStamp, editorEmail, changes[i]])
+    changelogSheet_array.push([timeStamp, editorEmail, changes[i], false])
   }
 
   changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
