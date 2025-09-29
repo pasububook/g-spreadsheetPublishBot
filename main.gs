@@ -1,8 +1,8 @@
-// onOpen関数は変更不要です。
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
-  menu.addItem('Google Chat に送信', 'showChangesDialog'); // 関数名を変更
+  menu.addItem('変更内容を登録', 'commitRevision')
+  menu.addItem('Google Chat に送信', 'mergeMain');
   menu.addToUi();
 }
 
