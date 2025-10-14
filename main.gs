@@ -31,14 +31,31 @@ function saveCommitRevision(changes) {
   changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
 }
 
-// メニュー: Google Chat に送信 (変更内容の処理を含む)
-function processAndSend(changes) {
-  // ユーザーがキャンセルした場合や何も入力しなかった場合の処理
-  if (!changes) {
-    SpreadsheetApp.getUi().alert('出版がキャンセルされました。');
-    return;
+// 変更内容の取得
+function getChangelogs(spreadsheetId, sheetName) {
+  const changelogSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+  const allChangelogs = changelogSheet.getRange(1, 1, changelogSheet.getLastRow(), changelogSheet.getLastColumn()).getValues();
+
+  var changelog = []
+  var isMergedFlags = []
+  var sellIndex = 1
+  for (let i = 0; i < allChangelogs.length - 1; i++) {
+    if (allChangelogs[sellIndex][3] == false) {
+      changelog.push(allChangelogs[sellIndex]);
+      isMergedFlags.push([true])
+    } else {
+      isMergedFlags.push([true])
+    }
+    sellIndex += 1
   }
-  
+
+  changelogSheet.getRange(2, 4, changelogSheet.getLastRow()-1).setValues(isMergedFlags)
+
+  return changelog
+}
+
+// メニュー: Google Chat に送信 (変更内容の処理を含む)
+function mergeMain() {
   const scriptProperties = PropertiesService.getScriptProperties();
   const PARENT_FOLDER_ID = scriptProperties.getProperty("PARENT_FOLDER_ID");
   const GOOGLE_CHAT_WEBHOOK_URL = scriptProperties.getProperty("GOOGLE_CHAT_WEBHOOK_URL");
@@ -50,6 +67,13 @@ function processAndSend(changes) {
 
   Logger.log('シート名: ' + sheetName);
   Logger.log('スプレッドシートID: ' + spreadsheetId);
+
+  // 変更内容の取得
+  const changelogs = getChangelogs(ss.getId(), '.changelog');
+  var changes = []
+  for (let i = 0; i < changelogs.length; i++) {
+    changes.push(changelogs[i][2])
+  }
 
   // ブランチファイル(キャッシュファイル)を削除
   deleteSheetsStartingWithBracket(spreadsheetId);
