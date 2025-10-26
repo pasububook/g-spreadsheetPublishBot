@@ -75,6 +75,12 @@ function mergeMain() {
     changes.push(changelogs[i][2])
   }
 
+  // バージョン表記の更新
+  // '.config'!B2: バージョン情報が記載されたせる
+  const configSheet = ss.getSheetByName(".config")
+  const nowDocVer = configSheet.getRange("B2").getValue();
+  const newDocVer = configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
+
   // ブランチファイル(キャッシュファイル)を削除
   deleteSheetsStartingWithBracket(spreadsheetId);
 
