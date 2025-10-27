@@ -27,7 +27,8 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
                 `&left_margin=0.75` +
                 `&right_margin=0.75` +
                 `&printtitle=true` + // スプレッドシートのタイトルをヘッダーに挿入
-                `&pagenum=CENTER`;    // ページ番号をフッターに挿入 (より汎用的な設定)
+                `&pagenum=CENTER` +     // ページ番号をフッターに挿入 (より汎用的な設定)
+                `&gridlines=false`; // グリッド線非表示
 
     // 注: ヘッダーの右にエクスポート日時を挿入する、またはヘッダーの中心にワークブックのタイトルを挿入する
     // 直接的なURLパラメータはありません。`printtitle=true`は通常左上にタイトルを挿入します。
