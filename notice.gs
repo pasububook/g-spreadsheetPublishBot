@@ -15,14 +15,23 @@ function sendGooglechat(messageContents, webhookUrl) {
   const textMessage = "「" + messageContents.sheetName + "」が更新されました。";
 
   // 貢献者の情報
-  const contributor = messageContents.publisher.name + "と他" + messageContents.editor + "人の編集者"
+  let contributor = messageContents.editor;
+  contributor.push(messageContents.publisher.email);
+  contributor = Array.from(new Set(contributor));
+
+  var contributorMessage;
+  if (contributor.length - 1 > 0){
+    contributorMessage = messageContents.publisher.name + " と他" + Number(contributor.length - 1) + "人の編集者";
+  } else {
+    contributorMessage = messageContents.publisher.name + "によって出版";
+  }
   
   // 送信するカードのJSON
   const cardMessage = 
   {
     "header": {
       "title": messageContents.sheetName,
-      "subtitle": contributor
+      "subtitle": contributorMessage
     },
     "sections": [
       {
