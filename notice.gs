@@ -13,12 +13,16 @@ function sendGooglechat(messageContents, webhookUrl) {
 
   // 送信するテキストメッセージ
   const textMessage = "「" + messageContents.sheetName + "」が更新されました。";
+
+  // 貢献者の情報
+  const contributor = messageContents.publisher.name + "と他" + messageContents.editor + "人の編集者"
   
   // 送信するカードのJSON
   const cardMessage = 
   {
     "header": {
       "title": messageContents.sheetName,
+      "subtitle": contributor
     },
     "sections": [
       {

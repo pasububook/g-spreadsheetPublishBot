@@ -85,6 +85,12 @@ function mergeMain() {
     changes.push(changelogs[i][2])
   }
 
+  // 編集者のメールアドレスを取得
+  var editorEmail = []
+  for (let i = 0; i < changelogs.length; i++) {
+    editorEmail.push(changelogs[i][1])
+  }
+
   // バージョン表記の更新
   // '.config'!B2: バージョン情報が記載されたせる
   const configSheet = ss.getSheetByName(".config")
@@ -109,6 +115,11 @@ function mergeMain() {
   // Google Chat で送信
   const message_content = {
     "sheetName": sheetName,
+    "publisher": {
+      "name": "publisherName",
+      "email": "publisherEmail"
+    },
+    "editor": Array.from(new Set(editorEmail)),
     "changes": changes,
     "download": {
       "color": color_data.sharingUrl,
