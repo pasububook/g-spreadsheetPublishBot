@@ -2,7 +2,7 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
   menu.addItem('変更内容を登録', 'showCommitRevision')
-  menu.addItem('Google Chat に送信', 'mergeMain');
+  menu.addItem('Google Chat に送信', 'mergeMainPermission');
   menu.addToUi();
 }
 
@@ -13,6 +13,16 @@ function showCommitRevision() {
       .setTitle('変更内容を記述')
       .setWidth(400); // 必要に応じて幅を調整
   SpreadsheetApp.getUi().showSidebar(html);
+}
+
+// 本当に Google Chat に送信してよいか確認するダイアログ
+function mergeMainPermission() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert("Google Chat に送信します", ui.ButtonSet.OK_CANCEL);
+
+  if (response == "OK") {
+    mergeMain();
+  }
 }
 
 // 変更内容の保存
