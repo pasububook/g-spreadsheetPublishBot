@@ -91,6 +91,12 @@ function mergeMain() {
     editorEmail.push(changelogs[i][1])
   }
 
+  // 出版者の情報を取得
+  const publisherEmail = Session.getActiveUser().getEmail();
+  const editorSheet = ss.getSheetByName(".editor");
+  const editors = editorSheet.getRange(2, 1, editorSheet.getLastRow() - 1, 2).getValues();
+  const publisherName = editors.find(row => row[0] === publisherEmail)[1];
+
   // バージョン表記の更新
   // '.config'!B2: バージョン情報が記載されたせる
   const configSheet = ss.getSheetByName(".config")
@@ -116,8 +122,8 @@ function mergeMain() {
   const message_content = {
     "sheetName": sheetName,
     "publisher": {
-      "name": "publisherName",
-      "email": "publisherEmail"
+      "name": publisherName,
+      "email": publisherEmail
     },
     "editor": Array.from(new Set(editorEmail)),
     "changes": changes,
