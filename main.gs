@@ -2,7 +2,7 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
   menu.addItem('変更内容を登録', 'showCommitRevision')
-  menu.addItem('Google Chat に送信', 'mergeMain');
+  menu.addItem('Google Chat に送信', 'mergeMainPermission');
   menu.addToUi();
 }
 
@@ -13,6 +13,16 @@ function showCommitRevision() {
       .setTitle('変更内容を記述')
       .setWidth(400); // 必要に応じて幅を調整
   SpreadsheetApp.getUi().showSidebar(html);
+}
+
+// 本当に Google Chat に送信してよいか確認するダイアログ
+function mergeMainPermission() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert("Google Chat に送信します", ui.ButtonSet.OK_CANCEL);
+
+  if (response == "OK") {
+    mergeMain();
+  }
 }
 
 // 変更内容の保存
@@ -75,6 +85,18 @@ function mergeMain() {
     changes.push(changelogs[i][2])
   }
 
+  // 編集者のメールアドレスを取得
+  var editorEmail = []
+  for (let i = 0; i < changelogs.length; i++) {
+    editorEmail.push(changelogs[i][1])
+  }
+
+  // 出版者の情報を取得
+  const publisherEmail = Session.getActiveUser().getEmail();
+  const editorSheet = ss.getSheetByName(".editor");
+  const editors = editorSheet.getRange(2, 1, editorSheet.getLastRow() - 1, 2).getValues();
+  const publisherName = editors.find(row => row[0] === publisherEmail)[1];
+
   // バージョン表記の更新
   // '.config'!B2: バージョン情報が記載されたせる
   const configSheet = ss.getSheetByName(".config")
@@ -99,6 +121,11 @@ function mergeMain() {
   // Google Chat で送信
   const message_content = {
     "sheetName": sheetName,
+    "publisher": {
+      "name": publisherName,
+      "email": publisherEmail
+    },
+    "editor": Array.from(new Set(editorEmail)),
     "changes": changes,
     "download": {
       "color": color_data.sharingUrl,
