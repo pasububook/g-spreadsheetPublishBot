@@ -50,6 +50,8 @@ function setMainSheet(){
       mainSheet.getRange(rangeAddress).merge();
     });
     }
+
+  setupSubjectTable(mainSheet)
 }
 
 // .config
@@ -70,6 +72,48 @@ function setEditorSheet(){
   editorSheet.getRange("A1:B1").setValues([["email", "name"]])
 }
 
+
+/**
+ * スプレッドシートに行タイトルを入力する関数
+ */
+function setupSubjectTable(sheet) {
+  let currentRow = 6; // 開始行
+
+  // 既存のデータをクリア（必要に応じて）
+  // sheet.getRange("A6:B100").clear();
+
+  for (let key in subjectData) {
+    const subItems = subjectData[key];
+
+    if (key === "other") {
+      // 'other' の場合はA列とB列を結合して記入
+      subItems.forEach(item => {
+        const range = sheet.getRange(currentRow, 1, 1, 2); // A列とB列の範囲を選択
+        range.merge(); // セルを結合
+        range.setValue(item);
+        currentRow++;
+      });
+    } else {
+      // 通常の教科処理
+      const numRows = subItems.length;
+
+      // A列：教科名を入力して結合
+      const categoryRange = sheet.getRange(currentRow, 1, numRows, 1);
+      categoryRange.setValue(key);
+      if (numRows > 1) {
+        categoryRange.merge();
+      }
+
+      // B列：各小科目を入力
+      subItems.forEach((subItem, index) => {
+        sheet.getRange(currentRow + index, 2).setValue(subItem);
+      });
+
+      // 次の教科の開始行へ移動
+      currentRow += numRows;
+    }
+  }
+}
 
 
 /**
