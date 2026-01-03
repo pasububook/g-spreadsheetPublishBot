@@ -8,17 +8,23 @@ function runAutoSetup() {
   // setConfigSheet()
 
   // .changelog
-  // setChangelogSheet()
+  setChangelogSheet()
 
   // .editor
   setEditorSheet()
 }
 
 
+// .changelog
+function setChangelogSheet(){
+  const changelogSheet = createNameSheet(".changelog");
+  changelogSheet.getRange("A1:D1").setValues([["timestamp", "editorEmail", "commitMessage", "isMerged"]])
+}
+
 // .editor
 function setEditorSheet(){
-  const nameSheet = createNameSheet(".editor");
-  nameSheet.getRange("A1:B1").setValues([["email", "name"]])
+  const editorSheet = createNameSheet(".editor");
+  editorSheet.getRange("A1:B1").setValues([["email", "name"]])
 }
 
 
