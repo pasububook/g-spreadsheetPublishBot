@@ -5,7 +5,7 @@ function runAutoSetup() {
   // setMainSheet()
 
   // .config
-  // setConfigSheet()
+  setConfigSheet()
 
   // .changelog
   setChangelogSheet()
@@ -14,6 +14,12 @@ function runAutoSetup() {
   setEditorSheet()
 }
 
+
+// .config
+function setConfigSheet(){
+  const configSheet = createNameSheet(".config");
+  configSheet.getRange("A1:B2").setValues([["title", docTitle], ["version", "0"]])
+}
 
 // .changelog
 function setChangelogSheet(){
