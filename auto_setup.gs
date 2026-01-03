@@ -11,8 +11,16 @@ function runAutoSetup() {
   // setChangelogSheet()
 
   // .editor
-  // setEditorSheet()
+  setEditorSheet()
 }
+
+
+// .editor
+function setEditorSheet(){
+  const nameSheet = createNameSheet(".editor");
+  nameSheet.getRange("A1:B1").setValues([["email", "name"]])
+}
+
 
 
 /**
