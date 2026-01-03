@@ -2,7 +2,7 @@ function runAutoSetup() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // main
-  // setMainSheet()
+  setMainSheet()
 
   // .config
   setConfigSheet()
@@ -14,6 +14,22 @@ function runAutoSetup() {
   setEditorSheet()
 }
 
+
+function setMainSheet(){
+  const mainSheet = createNameSheet(docTitle);
+
+  if (isShowCheckbox) {
+    return
+  } else {
+    const headerValues = [
+      ["='.config'!B1", "", "", "", "", "Edit", "", ""],
+      ["", "", "", "", "", "Ver.", "='.config'!B2", ""],
+      ["", "", "", "", "=NOW()", "", "", "版"]
+    ]
+
+    mainSheet.getRange("A1:H3").setValues(headerValues);
+  }
+}
 
 // .config
 function setConfigSheet(){
