@@ -21,6 +21,7 @@ function setMainSheet(){
   if (isShowCheckbox) {
     return
   } else {
+    // 値の保存
     const headerValues = [
       ["='.config'!B1", "", "", "", "", "Edit", "", ""],
       ["", "", "", "", "", "Ver.", "='.config'!B2", ""],
@@ -28,7 +29,21 @@ function setMainSheet(){
     ]
 
     mainSheet.getRange("A1:H3").setValues(headerValues);
-  }
+
+    // セル結合
+    const rangesToMerge = [
+      "A1:E2", 
+      "F1:H1", 
+      "G2:H2", 
+      "A3:D3", 
+      "E3:G3"
+    ];
+
+
+    rangesToMerge.forEach(rangeAddress => {
+      mainSheet.getRange(rangeAddress).merge();
+    });
+    }
 }
 
 // .config
