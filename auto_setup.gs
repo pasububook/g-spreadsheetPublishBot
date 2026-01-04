@@ -18,6 +18,7 @@ function runAutoSetup() {
 function setMainSheet(){
   const mainSheet = createNameSheet(docTitle);
 
+  // ヘッダー
   if (isShowCheckbox) {
     return
   } else {
@@ -27,14 +28,12 @@ function setMainSheet(){
       mainSheet.setColumnWidth(i + 1, headerWidth);
     });
 
-    // ヘッダー
     // 値の保存
     const headerValues = [
       ["='.config'!B1", "", "", "", "", "Edit", "", ""],
       ["", "", "", "", "", "Ver.", "='.config'!B2", ""],
       ["", "", "", "", "=NOW()", "", "", "版"]
     ]
-
     mainSheet.getRange("A1:H3").setValues(headerValues);
 
     // セル結合
@@ -45,21 +44,22 @@ function setMainSheet(){
       "A3:D3", 
       "E3:G3"
     ];
-
-
     rangesToMerge.forEach(rangeAddress => {
       mainSheet.getRange(rangeAddress).merge();
     });
+  }
 
-    // main
+  // main
+  const subjectTableArea = setupSubjectTable(mainSheet);
+  if (isShowCheckbox) {
+    return
+  } else {
     // 表の見出し
     const mainTableValues = [
       ["", "", "ステータス", "", "", "更新日", "", ""]
     ]
     mainSheet.getRange("A5:H5").setValues(mainTableValues);
   }
-
-  setupSubjectTable(mainSheet)
 }
 
 // .config
@@ -83,9 +83,12 @@ function setEditorSheet(){
 
 /**
  * スプレッドシートに行タイトルを入力する関数
+ * * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - 操作対象のシートオブジェクト
+ * @return {{a1Notation: string, numericNotation: string}} 編集した範囲（A1形式と数値形式の文字列）
  */
 function setupSubjectTable(sheet) {
-  let currentRow = 6; // 開始行
+  const startRow = 6; // 開始行
+  let currentRow = startRow;
 
   // 既存のデータをクリア（必要に応じて）
   // sheet.getRange("A6:B100").clear();
@@ -121,6 +124,17 @@ function setupSubjectTable(sheet) {
       currentRow += numRows;
     }
   }
+
+  // 編集範囲の計算
+  const totalRows = currentRow - startRow;
+  if (totalRows === 0) return { a1Notation: "", numericNotation: "" };
+
+  const finalRange = sheet.getRange(startRow, 1, totalRows, 2);
+
+  return {
+    a1Notation: finalRange.getA1Notation(), // 例: 'A6:B10'
+    numericNotation: `${startRow}, 1, ${totalRows}, 2` // 例: '6, 1, 5, 2'
+  };
 }
 
 
