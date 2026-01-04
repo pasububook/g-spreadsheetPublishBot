@@ -59,6 +59,15 @@ function setMainSheet(){
       ["", "", "ステータス", "", "", "更新日", "", ""]
     ]
     mainSheet.getRange("A5:H5").setValues(mainTableValues);
+
+    // 内容行の結合
+    const mainTableContentRange = [6, 4, subjectTableArea.numericNotation[2], 2]  // 開始行, 開始列, 行数, 列数
+    mainSheet.getRange(...mainTableContentRange).mergeAcross()
+
+    // 更新行の結合
+    const mainTableUpdateRange = [6, 6, subjectTableArea.numericNotation[2], 3]  // 開始行, 開始列, 行数, 列数
+    mainSheet.getRange(...mainTableUpdateRange).mergeAcross()
+
   }
 }
 
@@ -133,7 +142,7 @@ function setupSubjectTable(sheet) {
 
   return {
     a1Notation: finalRange.getA1Notation(), // 例: 'A6:B10'
-    numericNotation: `${startRow}, 1, ${totalRows}, 2` // 例: '6, 1, 5, 2'
+    numericNotation: [startRow, 1, totalRows, 2] // 例: '6, 1, 5, 2'
   };
 }
 
