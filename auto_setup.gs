@@ -69,6 +69,10 @@ function setMainSheet(){
     mainSheet.getRange(...mainTableUpdateRange).mergeAcross()
 
   }
+
+  // 全体的な仕上げ
+  // フォント
+  mainSheet.getRange(1, 1, mainSheet.getMaxRows(), mainSheet.getMaxColumns()).setFontFamily("Noto Sans JP");
 }
 
 // .config
