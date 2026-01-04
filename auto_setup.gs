@@ -27,6 +27,7 @@ function setMainSheet(){
       mainSheet.setColumnWidth(i + 1, headerWidth);
     });
 
+    // ヘッダー
     // 値の保存
     const headerValues = [
       ["='.config'!B1", "", "", "", "", "Edit", "", ""],
@@ -49,7 +50,14 @@ function setMainSheet(){
     rangesToMerge.forEach(rangeAddress => {
       mainSheet.getRange(rangeAddress).merge();
     });
-    }
+
+    // main
+    // 表の見出し
+    const mainTableValues = [
+      ["", "", "ステータス", "", "", "更新日", "", ""]
+    ]
+    mainSheet.getRange("A5:H5").setValues(mainTableValues);
+  }
 
   setupSubjectTable(mainSheet)
 }
