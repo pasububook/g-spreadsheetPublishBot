@@ -56,7 +56,7 @@ function setMainSheet(){
   } else {
     // 表の見出し
     const mainTableValues = [
-      ["", "", "ステータス", "", "", "更新日", "", ""]
+      ["", "", "ステータス", "内容", "", "更新日", "", ""]
     ]
     mainSheet.getRange("A5:H5").setValues(mainTableValues);
 
