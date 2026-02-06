@@ -154,7 +154,8 @@ function setMainSheet(){
         .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
       
       // D6:E(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (E列の右線不足を解消)
-      mainSheet.getRange(5, 5, dataRowCount + 1, 2)
+      // 修正: 開始列を5(E列)から4(D列)に変更し、D:Eの結合範囲の右側に線を引く
+      mainSheet.getRange(5, 4, dataRowCount + 1, 2)
         .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
     }
 
