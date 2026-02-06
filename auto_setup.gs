@@ -85,6 +85,34 @@ function setMainSheet(){
     const mainTableUpdateRange = [6, 6, subjectTableArea.numericNotation[2], 3]  // 開始行, 開始列, 行数, 列数
     mainSheet.getRange(...mainTableUpdateRange).mergeAcross()
 
+    // 5行目のセル結合
+    const rangesToMergeRow5 = ["A5:B5", "D5:E5", "F5:H5"];
+    rangesToMergeRow5.forEach(range => mainSheet.getRange(range).merge());
+
+    // 5行目のスタイル: 上下左右中央寄せ
+    mainSheet.getRange("A5:H5")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    // 6行目以降（データ行）のスタイル設定
+    const dataRowCount = subjectTableArea.numericNotation[2];
+    
+    if (dataRowCount > 0) {
+      // 基本ルール: 行数が6行以下（データ行）は 左上寄せ
+      // 範囲: A6 から H列の最終データ行まで
+      mainSheet.getRange(6, 1, dataRowCount, 8)
+        .setVerticalAlignment("top")
+        .setHorizontalAlignment("left");
+
+      // 例外ルール: C列(3) または F列(6) の場合は 左右中央上寄せ
+      // C列 (ステータス)
+      mainSheet.getRange(6, 3, dataRowCount, 1)
+        .setHorizontalAlignment("center");
+      
+      // F列 (更新日 - 結合セルF:Hの始点)
+      mainSheet.getRange(6, 6, dataRowCount, 1)
+        .setHorizontalAlignment("center");
+    }
   }
 
   // 全体的な仕上げ
