@@ -98,16 +98,19 @@ function setMainSheet(){
     const dataRowCount = subjectTableArea.numericNotation[2];
     
     if (dataRowCount > 0) {
-      // 基本ルール: 行数が6行以下（データ行）は 左上寄せ
-      // 範囲: A6 から H列の最終データ行まで
+      // 基本ルール: 左上寄せ
       mainSheet.getRange(6, 1, dataRowCount, 8)
         .setVerticalAlignment("top")
         .setHorizontalAlignment("left");
 
-      // 例外ルール: C列(3) または F列(6) の場合は 左右中央上寄せ
-      // C列 (ステータス)
+      // C列 (ステータス) の設定：左右中央寄せ
       mainSheet.getRange(6, 3, dataRowCount, 1)
-        .setHorizontalAlignment("center");
+        .setHorizontalAlignment("center")
+        .setWrap(true);
+      
+      // D列（内容）の設定：文字の折り返しを有効化
+      mainSheet.getRange(6, 4, dataRowCount, 1)
+        .setWrap(true);
       
       // F列 (更新日 - 結合セルF:Hの始点)
       mainSheet.getRange(6, 6, dataRowCount, 1)
