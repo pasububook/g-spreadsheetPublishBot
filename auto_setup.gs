@@ -64,6 +64,14 @@ function setMainSheet(){
       .setFontWeight("bold")
       .setFontSize(18)
       .setHorizontalAlignment("center");
+
+    // --- 罫線追加分 (ヘッダーエリア) ---
+    // A1:H3: 上下に太さ(3: SOLID_MEDIUM)の黒色
+    mainSheet.getRange("A1:H3").setBorder(true, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // F1:H1: 下に太さ(1: SOLID)の黒色
+    mainSheet.getRange("F1:H1").setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+    // A1:H2: 下に太さ(1: SOLID)の黒色
+    mainSheet.getRange("A1:H2").setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
   }
 
   // main
@@ -98,12 +106,13 @@ function setMainSheet(){
     const dataRowCount = subjectTableArea.numericNotation[2];
     
     if (dataRowCount > 0) {
+      // --- スタイル設定 ---
       // 基本ルール: 左上寄せ
       mainSheet.getRange(6, 1, dataRowCount, 8)
         .setVerticalAlignment("top")
         .setHorizontalAlignment("left");
 
-      // C列 (ステータス) の設定：左右中央寄せ
+      // C列 (ステータス) の設定：左右中央寄せ・折り返し
       mainSheet.getRange(6, 3, dataRowCount, 1)
         .setHorizontalAlignment("center")
         .setWrap(true);
@@ -115,24 +124,53 @@ function setMainSheet(){
       // F列 (更新日 - 結合セルF:Hの始点)
       mainSheet.getRange(6, 6, dataRowCount, 1)
         .setHorizontalAlignment("center");
+
+      // --- 罫線設定 (テーブルエリア) ---
+      // A5:H(5+dataRowCount): 上下左右に太さ(3: SOLID_MEDIUM)の黒色
+      mainSheet.getRange(5, 1, dataRowCount + 1, 8)
+        .setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+      
+      // A5:H5: 下に二重線黒色
+      mainSheet.getRange("A5:H5")
+        .setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.DOUBLE);
+      
+      // A5:B(5+dataRowCount): 右に二重線黒色
+      mainSheet.getRange(5, 1, dataRowCount + 1, 2)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.DOUBLE);
+      
+      // A6:A(5+dataRowCount): 右に太さ(1: SOLID)の黒色
+      mainSheet.getRange(6, 1, dataRowCount, 1)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+      
+      // A6:H(5+dataRowCount): 上下の間に太さ(1: SOLID)の黒色
+      mainSheet.getRange(6, 1, dataRowCount, 8)
+        .setBorder(null, null, null, null, null, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      
+      // C5:C(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (C5の右線不足を解消)
+      mainSheet.getRange(5, 3, dataRowCount + 1, 1)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+      
+      // D6:E(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (E列の右線不足を解消)
+      mainSheet.getRange(5, 5, dataRowCount + 1, 2)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
     }
-  }
 
-  // 全体的な仕上げ
-  // フォント
-  mainSheet.getRange(1, 1, mainSheet.getMaxRows(), mainSheet.getMaxColumns()).setFontFamily("Noto Sans JP");
+    // 全体的な仕上げ
+    // フォント
+    mainSheet.getRange(1, 1, mainSheet.getMaxRows(), mainSheet.getMaxColumns()).setFontFamily("Noto Sans JP");
 
-  // I列以降を削除 (H列=8列目まで残す)
-  const maxCols = mainSheet.getMaxColumns();
-  if (maxCols > 8) {
-    mainSheet.deleteColumns(9, maxCols - 8);
-  }
+    // I列以降を削除 (H列=8列目まで残す)
+    const maxCols = mainSheet.getMaxColumns();
+    if (maxCols > 8) {
+      mainSheet.deleteColumns(9, maxCols - 8);
+    }
 
-  // 文字の書かれた最後の行超過分を削除
-  const lastRow = mainSheet.getLastRow();
-  const maxRows = mainSheet.getMaxRows();
-  if (maxRows > lastRow) {
-    mainSheet.deleteRows(lastRow + 1, maxRows - lastRow);
+    // 文字の書かれた最後の行超過分を削除
+    const lastRow = mainSheet.getLastRow();
+    const maxRows = mainSheet.getMaxRows();
+    if (maxRows > lastRow) {
+      mainSheet.deleteRows(lastRow + 1, maxRows - lastRow);
+    }
   }
 }
 
