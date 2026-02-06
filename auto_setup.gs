@@ -1,9 +1,6 @@
 function runAutoSetup() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // main
-  setMainSheet()
-
   // .config
   setConfigSheet()
 
@@ -12,6 +9,9 @@ function runAutoSetup() {
 
   // .editor
   setEditorSheet()
+
+  // main
+  setMainSheet()
 }
 
 
@@ -152,7 +152,7 @@ function setMainSheet(){
       // C5:C(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (C5の右線不足を解消)
       mainSheet.getRange(5, 3, dataRowCount + 1, 1)
         .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
-      
+
       // D6:E(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (E列の右線不足を解消)
       // 修正: 開始列を5(E列)から4(D列)に変更し、D:Eの結合範囲の右側に線を引く
       mainSheet.getRange(5, 4, dataRowCount + 1, 2)
@@ -182,12 +182,17 @@ function setMainSheet(){
 function setConfigSheet(){
   const configSheet = createNameSheet(".config");
   configSheet.getRange("A1:B2").setValues([["title", docTitle], ["version", "0"]])
+
+  configSheet.hideSheet();
 }
 
 // .changelog
 function setChangelogSheet(){
   const changelogSheet = createNameSheet(".changelog");
   changelogSheet.getRange("A1:D1").setValues([["timestamp", "editorEmail", "commitMessage", "isMerged"]])
+
+  // 作成したシートを非表示にする
+  changelogSheet.hideSheet();
 }
 
 // .editor
