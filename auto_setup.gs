@@ -118,6 +118,19 @@ function setMainSheet(){
   // 全体的な仕上げ
   // フォント
   mainSheet.getRange(1, 1, mainSheet.getMaxRows(), mainSheet.getMaxColumns()).setFontFamily("Noto Sans JP");
+
+  // I列以降を削除 (H列=8列目まで残す)
+  const maxCols = mainSheet.getMaxColumns();
+  if (maxCols > 8) {
+    mainSheet.deleteColumns(9, maxCols - 8);
+  }
+
+  // 文字の書かれた最後の行超過分を削除
+  const lastRow = mainSheet.getLastRow();
+  const maxRows = mainSheet.getMaxRows();
+  if (maxRows > lastRow) {
+    mainSheet.deleteRows(lastRow + 1, maxRows - lastRow);
+  }
 }
 
 // .config
