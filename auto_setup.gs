@@ -74,6 +74,9 @@ function setMainSheet(){
     mainSheet.getRange("A1:H2").setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
   }
 
+  // 隙間
+  mainSheet.getRange("A4:H4").merge()
+
   // main
   const subjectTableArea = setupSubjectTable(mainSheet);
   if (isShowCheckbox) {
