@@ -47,6 +47,23 @@ function setMainSheet(){
     rangesToMerge.forEach(rangeAddress => {
       mainSheet.getRange(rangeAddress).merge();
     });
+
+    // A1: 太字、フォントサイズ: 24、上下中央
+    mainSheet.getRange("A1")
+      .setFontWeight("bold")
+      .setFontSize(24)
+      .setVerticalAlignment("middle");
+
+    // F1: 上下左右中央
+    mainSheet.getRange("F1")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    // G2: 太字、フォントサイズ: 18、左右中央
+    mainSheet.getRange("G2")
+      .setFontWeight("bold")
+      .setFontSize(18)
+      .setHorizontalAlignment("center");
   }
 
   // main
