@@ -20,6 +20,7 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
     // 参考: https://developers.google.com/sheets/api/guides/export#export_a_spreadsheet_as_a_pdf
     let url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=pdf` +
                 `&gid=${sheet.getSheetId()}` +
+                `&size=A4` + // 大きさ
                 `&portrait=true` + // 縦向き (必要に応じて変更)
                 `&fitw=true` +     // ページ幅に合わせる (必要に応じて変更)
                 `&top_margin=0.75` + // 余白 (必要に応じて変更)

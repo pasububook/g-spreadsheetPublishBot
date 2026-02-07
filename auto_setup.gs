@@ -1,0 +1,284 @@
+function runAutoSetup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // .config
+  setConfigSheet()
+
+  // .changelog
+  setChangelogSheet()
+
+  // .editor
+  setEditorSheet()
+
+  // main
+  setMainSheet()
+}
+
+
+function setMainSheet(){
+  const mainSheet = createNameSheet(docTitle);
+
+  // ヘッダー
+  if (isShowCheckbox) {
+    return
+  } else {
+    // 列の幅の調整
+    const headerWidths = [34, 86, 74, 365, 60, 30, 41, 21];
+    headerWidths.forEach((headerWidth, i) => {
+      mainSheet.setColumnWidth(i + 1, headerWidth);
+    });
+
+    // 値の保存
+    const headerValues = [
+      ["='.config'!B1", "", "", "", "", "Edit", "", ""],
+      ["", "", "", "", "", "Ver.", "='.config'!B2", ""],
+      ["", "", "", "", "=NOW()", "", "", "版"]
+    ]
+    mainSheet.getRange("A1:H3").setValues(headerValues);
+
+    // セル結合
+    const rangesToMerge = [
+      "A1:E2", 
+      "F1:H1", 
+      "G2:H2", 
+      "A3:D3", 
+      "E3:G3"
+    ];
+    rangesToMerge.forEach(rangeAddress => {
+      mainSheet.getRange(rangeAddress).merge();
+    });
+
+    // A1: 太字、フォントサイズ: 24、上下中央
+    mainSheet.getRange("A1")
+      .setFontWeight("bold")
+      .setFontSize(24)
+      .setVerticalAlignment("middle");
+
+    // F1: 上下左右中央
+    mainSheet.getRange("F1")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    // G2: 太字、フォントサイズ: 18、左右中央
+    mainSheet.getRange("G2")
+      .setFontWeight("bold")
+      .setFontSize(18)
+      .setHorizontalAlignment("center");
+
+    // --- 罫線追加分 (ヘッダーエリア) ---
+    // A1:H3: 上下に太さ(3: SOLID_MEDIUM)の黒色
+    mainSheet.getRange("A1:H3").setBorder(true, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // F1:H1: 下に太さ(1: SOLID)の黒色
+    mainSheet.getRange("F1:H1").setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+    // A1:H2: 下に太さ(1: SOLID)の黒色
+    mainSheet.getRange("A1:H2").setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+  }
+
+  // 隙間
+  mainSheet.getRange("A4:H4").merge()
+
+  // main
+  const subjectTableArea = setupSubjectTable(mainSheet);
+  if (isShowCheckbox) {
+    return
+  } else {
+    // 表の見出し
+    const mainTableValues = [
+      ["", "", "ステータス", "内容", "", "更新日", "", ""]
+    ]
+    mainSheet.getRange("A5:H5").setValues(mainTableValues);
+
+    // 内容行の結合
+    const mainTableContentRange = [6, 4, subjectTableArea.numericNotation[2], 2]  // 開始行, 開始列, 行数, 列数
+    mainSheet.getRange(...mainTableContentRange).mergeAcross()
+
+    // 更新行の結合
+    const mainTableUpdateRange = [6, 6, subjectTableArea.numericNotation[2], 3]  // 開始行, 開始列, 行数, 列数
+    mainSheet.getRange(...mainTableUpdateRange).mergeAcross()
+
+    // 5行目のセル結合
+    const rangesToMergeRow5 = ["A5:B5", "D5:E5", "F5:H5"];
+    rangesToMergeRow5.forEach(range => mainSheet.getRange(range).merge());
+
+    // 5行目のスタイル: 上下左右中央寄せ
+    mainSheet.getRange("A5:H5")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    // 6行目以降（データ行）のスタイル設定
+    const dataRowCount = subjectTableArea.numericNotation[2];
+    
+    if (dataRowCount > 0) {
+      // --- スタイル設定 ---
+      // 基本ルール: 左上寄せ
+      mainSheet.getRange(6, 1, dataRowCount, 8)
+        .setVerticalAlignment("top")
+        .setHorizontalAlignment("left");
+
+      // C列 (ステータス) の設定：左右中央寄せ・折り返し
+      mainSheet.getRange(6, 3, dataRowCount, 1)
+        .setHorizontalAlignment("center")
+        .setWrap(true);
+      
+      // D列（内容）の設定：文字の折り返しを有効化
+      mainSheet.getRange(6, 4, dataRowCount, 1)
+        .setWrap(true);
+      
+      // F列 (更新日 - 結合セルF:Hの始点)
+      mainSheet.getRange(6, 6, dataRowCount, 1)
+        .setHorizontalAlignment("center");
+
+      // --- 罫線設定 (テーブルエリア) ---
+      // A5:H(5+dataRowCount): 上下左右に太さ(3: SOLID_MEDIUM)の黒色
+      mainSheet.getRange(5, 1, dataRowCount + 1, 8)
+        .setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+      
+      // A5:H5: 下に二重線黒色
+      mainSheet.getRange("A5:H5")
+        .setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.DOUBLE);
+      
+      // A5:B(5+dataRowCount): 右に二重線黒色
+      mainSheet.getRange(5, 1, dataRowCount + 1, 2)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.DOUBLE);
+      
+      // A6:A(5+dataRowCount): 右に太さ(1: SOLID)の黒色
+      mainSheet.getRange(6, 1, dataRowCount, 1)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+      
+      // A6:H(5+dataRowCount): 上下の間に太さ(1: SOLID)の黒色
+      mainSheet.getRange(6, 1, dataRowCount, 8)
+        .setBorder(null, null, null, null, null, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      
+      // C5:C(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (C5の右線不足を解消)
+      mainSheet.getRange(5, 3, dataRowCount + 1, 1)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+
+      // D6:E(5+dataRowCount): 右に太さ(1: SOLID)の黒色 (E列の右線不足を解消)
+      // 修正: 開始列を5(E列)から4(D列)に変更し、D:Eの結合範囲の右側に線を引く
+      mainSheet.getRange(5, 4, dataRowCount + 1, 2)
+        .setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
+    }
+
+    // 全体的な仕上げ
+    // フォント
+    mainSheet.getRange(1, 1, mainSheet.getMaxRows(), mainSheet.getMaxColumns()).setFontFamily("Noto Sans JP");
+
+    // I列以降を削除 (H列=8列目まで残す)
+    const maxCols = mainSheet.getMaxColumns();
+    if (maxCols > 8) {
+      mainSheet.deleteColumns(9, maxCols - 8);
+    }
+
+    // 文字の書かれた最後の行超過分を削除
+    const lastRow = mainSheet.getLastRow();
+    const maxRows = mainSheet.getMaxRows();
+    if (maxRows > lastRow) {
+      mainSheet.deleteRows(lastRow + 1, maxRows - lastRow);
+    }
+  }
+}
+
+// .config
+function setConfigSheet(){
+  const configSheet = createNameSheet(".config");
+  configSheet.getRange("A1:B2").setValues([["title", docTitle], ["version", "0"]])
+
+  configSheet.hideSheet();
+}
+
+// .changelog
+function setChangelogSheet(){
+  const changelogSheet = createNameSheet(".changelog");
+  changelogSheet.getRange("A1:D1").setValues([["timestamp", "editorEmail", "commitMessage", "isMerged"]])
+
+  // 作成したシートを非表示にする
+  changelogSheet.hideSheet();
+}
+
+// .editor
+function setEditorSheet(){
+  const editorSheet = createNameSheet(".editor");
+  editorSheet.getRange("A1:B1").setValues([["email", "name"]])
+}
+
+
+/**
+ * スプレッドシートに行タイトルを入力する関数
+ * * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - 操作対象のシートオブジェクト
+ * @return {{a1Notation: string, numericNotation: string}} 編集した範囲（A1形式と数値形式の文字列）
+ */
+function setupSubjectTable(sheet) {
+  const startRow = 6; // 開始行
+  let currentRow = startRow;
+
+  // 既存のデータをクリア（必要に応じて）
+  // sheet.getRange("A6:B100").clear();
+
+  for (let key in subjectData) {
+    const subItems = subjectData[key];
+
+    if (key === "other") {
+      // 'other' の場合はA列とB列を結合して記入
+      subItems.forEach(item => {
+        const range = sheet.getRange(currentRow, 1, 1, 2); // A列とB列の範囲を選択
+        range.merge(); // セルを結合
+        range.setValue(item);
+        currentRow++;
+      });
+    } else {
+      // 通常の教科処理
+      const numRows = subItems.length;
+
+      // A列：教科名を入力して結合
+      const categoryRange = sheet.getRange(currentRow, 1, numRows, 1);
+      categoryRange.setValue(key);
+      if (numRows > 1) {
+        categoryRange.merge();
+      }
+
+      // B列：各小科目を入力
+      subItems.forEach((subItem, index) => {
+        sheet.getRange(currentRow + index, 2).setValue(subItem);
+      });
+
+      // 次の教科の開始行へ移動
+      currentRow += numRows;
+    }
+  }
+
+  // 編集範囲の計算
+  const totalRows = currentRow - startRow;
+  if (totalRows === 0) return { a1Notation: "", numericNotation: "" };
+
+  const finalRange = sheet.getRange(startRow, 1, totalRows, 2);
+
+  return {
+    a1Notation: finalRange.getA1Notation(), // 例: 'A6:B10'
+    numericNotation: [startRow, 1, totalRows, 2] // 例: '6, 1, 5, 2'
+  };
+}
+
+
+/**
+ * 指定された名前のシートを新規作成します。
+ * すでに存在する場合はアラートを表示し、既存のシートを返します。
+ * * @param {string} sheetName - 作成したいシートの名前
+ * @return {GoogleAppsScript.Spreadsheet.Sheet} 作成された（または既存の）シートオブジェクト
+ */
+function createNameSheet(sheetName) {
+  // 1. アクティブなスプレッドシートを取得
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 2. すでに同じ名前のシートがないかチェック
+  const existingSheet = ss.getSheetByName(sheetName);
+
+  if (!existingSheet) {
+    // 3. シートが存在しない場合は、新規作成
+    const nameSheet = ss.insertSheet(sheetName);
+    Logger.log("[log] シート '" + sheetName + "' を作成しました。");
+    return nameSheet
+  } else {
+    // すでに存在する場合の通知
+    Logger.log("[error] エラー：'" + sheetName + "' というシートは既に存在します。");
+  }
+}
