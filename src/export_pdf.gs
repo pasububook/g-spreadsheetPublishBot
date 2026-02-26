@@ -5,9 +5,10 @@
  * @param {string} sheetName - エクスポートするシートの名前。
  * @param {string} folderId - エクスポートしたPDFを保存するフォルダのID。
  * @param {boolean} includeTimestamp - PDFファイル名にエクスポート時刻を含めるかどうか (true/false)。
+ * @param {Date=} baseTimestamp - PDFファイル名に利用する基準時刻。未指定時は現在時刻。
  * @returns {Object} エクスポートしたPDFのファイル名、ファイルID、共有URLを含むオブジェクト。
  */
-function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) {
+function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp, baseTimestamp) {
   try {
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     const sheet = spreadsheet.getSheetByName(sheetName);
@@ -51,7 +52,7 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
     let fileName = sheetName;
     if (includeTimestamp) {
       // ファイル名にエクスポート日時を含める
-      const now = new Date();
+      const now = baseTimestamp || new Date();
       const year = now.getFullYear();
       const month = ('0' + (now.getMonth() + 1)).slice(-2);
       const day = ('0' + now.getDate()).slice(-2);
@@ -73,51 +74,5 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
   } catch (e) {
     Logger.log(`エラーが発生しました: ${e.message}`);
     throw e; // エラーを再スローして、呼び出し元で処理できるようにする
-  }
-}
-
-/**
- * exportSheetAsPdf 関数のテストコード。
- * 実際に実行する際は、適切なスプレッドシートID、シート名、フォルダIDを設定してください。
- */
-function test_exportSheetAsPdf() {
-  // !!! ここに適切な値を設定してください !!!
-  const testSpreadsheetId = 'あなたのテスト用スプレッドシートID'; // 例: '1abcdefghijklmnopqrstuvwxyz1234567890'
-  const testSheetName = 'TestSheet'; // 例: 'シート1'
-  const testFolderId = 'あなたのテスト用フォルダID'; // 例: '1abcdefghijklmnopqrstuvwxyz1234567890'
-
-  if (testSpreadsheetId === 'あなたのテスト用スプレッドシートID' || 
-      testSheetName === 'TestSheet' || 
-      testFolderId === 'あなたのテスト用フォルダID') {
-    Logger.log("注意: test_exportSheetAsPdf を実行する前に、'あなたのテスト用スプレッドシートID', 'あなたのテスト用シート名', 'あなたのテスト用フォルダID' を適切な値に置き換えてください。");
-    return;
-  }
-
-  Logger.log('--- test_exportSheetAsPdf (時刻を含む) ---');
-  try {
-    const resultWithTimestamp = exportSheetAsPdf(testSpreadsheetId, testSheetName, testFolderId, true);
-    Logger.log(`ファイル名 (時刻含む): ${resultWithTimestamp.fileName}`);
-    Logger.log(`ファイルID (時刻含む): ${resultWithTimestamp.fileId}`);
-    Logger.log(`共有URL (時刻含む): ${resultWithTimestamp.sharingUrl}`);
-    // ここで、生成されたファイルが期待通りか手動で確認することもできます。
-  } catch (e) {
-    Logger.log(`テスト失敗 (時刻含む): ${e.message}`);
-  }
-
-  Logger.log('--- test_exportSheetAsPdf (時刻を含まない) ---');
-  try {
-    const resultWithoutTimestamp = exportSheetAsPdf(testSpreadsheetId, testSheetName, testFolderId, false);
-    Logger.log(`ファイル名 (時刻含まない): ${resultWithoutTimestamp.fileName}`);
-    Logger.log(`ファイルID (時刻含まない): ${resultWithoutTimestamp.fileId}`);
-    Logger.log(`共有URL (時刻含まない): ${resultWithoutTimestamp.sharingUrl}`);
-  } catch (e) {
-    Logger.log(`テスト失敗 (時刻含まない): ${e.message}`);
-  }
-
-  Logger.log('--- test_exportSheetAsPdf (存在しないシート名) ---');
-  try {
-    exportSheetAsPdf(testSpreadsheetId, '存在しないシート', testFolderId, false);
-  } catch (e) {
-    Logger.log(`テスト成功 (存在しないシート名): ${e.message}`); // エラーが期待される
   }
 }

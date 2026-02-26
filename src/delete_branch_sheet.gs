@@ -19,13 +19,3 @@ function deleteSheetsStartingWithBracket(spreadsheetId) {
   }
   return deletedSheetNames;
 }
-
-function testDeleteSheets() {
-  const targetSpreadsheetId = 'あなたのスプレッドシートIDをここに貼り付けてください'; // ここに実際のIDを入力
-  const deletedNames = deleteSheetsStartingWithBracket(targetSpreadsheetId);
-  if (deletedNames.length > 0) {
-    Logger.log('以下のシートが削除されました: ' + deletedNames.join(', '));
-  } else {
-    Logger.log('「[」から始まるシートは見つかりませんでした。');
-  }
-}
