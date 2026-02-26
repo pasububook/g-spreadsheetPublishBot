@@ -189,7 +189,7 @@ function setConfigSheet(){
 // .changelog
 function setChangelogSheet(){
   const changelogSheet = createNameSheet(".changelog");
-  changelogSheet.getRange("A1:D1").setValues([["timestamp", "editorEmail", "commitMessage", "isMerged"]])
+  changelogSheet.getRange("A1:E1").setValues([["timestamp", "editorEmail", "subject", "commitMessage", "isMerged"]])
 
   // 作成したシートを非表示にする
   changelogSheet.hideSheet();

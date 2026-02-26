@@ -37,7 +37,7 @@ function mergeMainPermission() {
 
 /**
  * 変更内容を .changelog に保存する。
- * @param {string[]} changes 変更内容配列
+ * @param {(string[]|Array<Array<string>>)} changes 変更内容配列
  * @return {void}
  */
 function saveCommitRevision(changes) {
@@ -49,7 +49,26 @@ function saveCommitRevision(changes) {
 
   var changelogSheet_array = []
   for (let i = 0; i < changes.length; i++) {
-    changelogSheet_array.push([timeStamp, editorEmail, changes[i], false])
+    const row = changes[i];
+    let subject = '';
+    let commitMessage = '';
+
+    if (Array.isArray(row)) {
+      subject = row[0] != null ? String(row[0]).trim() : '';
+      commitMessage = row[1] != null ? String(row[1]).trim() : '';
+    } else {
+      commitMessage = row != null ? String(row).trim() : '';
+    }
+
+    if (commitMessage === '') {
+      continue;
+    }
+
+    changelogSheet_array.push([timeStamp, editorEmail, subject, commitMessage, false])
+  }
+
+  if (changelogSheet_array.length === 0) {
+    return;
   }
 
   changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
@@ -73,7 +92,7 @@ function getUnmergedChangelogs(spreadsheetId, sheetName) {
   var changelog = [];
 
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][3] === false) {
+    if (allChangelogs[i][4] === false) {
       changelog.push(allChangelogs[i]);
     }
   }
@@ -96,8 +115,8 @@ function markChangelogsAsMerged(spreadsheetId, sheetName) {
 
   const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][3] === false) {
-      changelogSheet.getRange(i + 2, 4).setValue(true);
+    if (allChangelogs[i][4] === false) {
+      changelogSheet.getRange(i + 2, 5).setValue(true);
     }
   }
 }
@@ -232,7 +251,7 @@ function mergeMain() {
   const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
   var changes = []
   for (let i = 0; i < changelogs.length; i++) {
-    changes.push(changelogs[i][2])
+    changes.push(changelogs[i][3])
   }
 
   // 編集者のメールアドレスを取得

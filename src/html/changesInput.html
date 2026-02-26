@@ -1077,14 +1077,13 @@ document.getElementById('save-btn').onclick = function() {
         .map(part => part.trim())
         .filter(Boolean);
 
-      const subjectPrefix = subject ? `[${subject}] ` : '';
       parts.forEach(part => {
-        changes.push(subjectPrefix + part);
+        changes.push([subject, part]);
       });
 
       // 区切りで分割されなかった場合（空白のみを除く）も1件として保持
       if (parts.length === 0 && content.trim() !== '') {
-        changes.push(subjectPrefix + content.trim());
+        changes.push([subject, content.trim()]);
       }
     }
   });
