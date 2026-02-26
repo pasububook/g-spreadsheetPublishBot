@@ -79,11 +79,22 @@ function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const sheets = ss.getSheets();
   const exportTime = baseTimestamp || new Date();
-  const nowSerial = exportTime.getTime() / (24 * 60 * 60 * 1000) + 25569;
-  const todaySerial = Math.floor(nowSerial);
+  const year = exportTime.getFullYear();
+  const month = exportTime.getMonth() + 1;
+  const day = exportTime.getDate();
+  const hours = exportTime.getHours();
+  const minutes = exportTime.getMinutes();
+  const seconds = exportTime.getSeconds();
+
+  const fixedNowExpr = '(DATE(' + year + ',' + month + ',' + day + ')+TIME(' + hours + ',' + minutes + ',' + seconds + '))';
+  const fixedTodayExpr = '(DATE(' + year + ',' + month + ',' + day + '))';
 
   for (let i = 0; i < sheets.length; i++) {
     const sheet = sheets[i];
+    if (sheet.getName().startsWith('.')) {
+      continue;
+    }
+
     const range = sheet.getDataRange();
     if (range.getNumRows() === 0 || range.getNumColumns() === 0) {
       continue;
@@ -98,19 +109,14 @@ function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
         }
 
         const rewritten = formula
-          .replace(/NOW\(\)/gi, '(' + nowSerial + ')')
-          .replace(/TODAY\(\)/gi, '(' + todaySerial + ')');
+          .replace(/NOW\(\)/gi, fixedNowExpr)
+          .replace(/TODAY\(\)/gi, fixedTodayExpr);
 
         if (rewritten !== formula) {
           range.getCell(rowIndex + 1, colIndex + 1).setFormula(rewritten);
         }
       }
     }
-
-    const numberFormats = range.getNumberFormats();
-    const values = range.getValues();
-    range.setValues(values);
-    range.setNumberFormats(numberFormats);
   }
 }
 
