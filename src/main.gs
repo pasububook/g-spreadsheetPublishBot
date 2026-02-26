@@ -137,6 +137,17 @@ function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
   throw new Error('PARENT_FOLDER_ID が未設定で、コピー元スプレッドシートの親フォルダも取得できません。');
 }
 
+// エクスポート用コピーの対象シート見出しを更新
+function replaceExportHeaderLabel(spreadsheetId, sheetName) {
+  const exportSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const targetSheet = exportSpreadsheet.getSheetByName(sheetName);
+  if (!targetSheet) {
+    throw new Error('対象シートが見つかりません: ' + sheetName);
+  }
+
+  targetSheet.getRange('F1').setValue('Issue');
+}
+
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
 function mergeMain() {
   const exportStartedAt = new Date();
@@ -187,6 +198,9 @@ function mergeMain() {
 
   // コピーしたスプレッドシート内の時間依存データを固定化
   freezeSpreadsheetValues(exportSpreadsheetId, exportStartedAt);
+
+  // エクスポート用コピーの見出しを変更 (Edit -> Issue)
+  replaceExportHeaderLabel(exportSpreadsheetId, sheetName);
 
   // コピー先に残っている一時シートを削除
   deleteSheetsStartingWithBracket(exportSpreadsheetId);
