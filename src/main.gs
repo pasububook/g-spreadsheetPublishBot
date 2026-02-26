@@ -44,24 +44,28 @@ function saveCommitRevision(changes) {
 // 変更内容の取得
 function getChangelogs(spreadsheetId, sheetName) {
   const changelogSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
-  const allChangelogs = changelogSheet.getRange(1, 1, changelogSheet.getLastRow(), changelogSheet.getLastColumn()).getValues();
-
-  var changelog = []
-  var isMergedFlags = []
-  var sellIndex = 1
-  for (let i = 0; i < allChangelogs.length - 1; i++) {
-    if (allChangelogs[sellIndex][3] == false) {
-      changelog.push(allChangelogs[sellIndex]);
-      isMergedFlags.push([true])
-    } else {
-      isMergedFlags.push([true])
-    }
-    sellIndex += 1
+  const lastRow = changelogSheet.getLastRow();
+  if (lastRow <= 1) {
+    return [];
   }
 
-  changelogSheet.getRange(2, 4, changelogSheet.getLastRow()-1).setValues(isMergedFlags)
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
 
-  return changelog
+  var changelog = [];
+  var rowsToMarkMerged = [];
+
+  for (let i = 0; i < allChangelogs.length; i++) {
+    if (allChangelogs[i][3] === false) {
+      changelog.push(allChangelogs[i]);
+      rowsToMarkMerged.push(i + 2);
+    }
+  }
+
+  for (let i = 0; i < rowsToMarkMerged.length; i++) {
+    changelogSheet.getRange(rowsToMarkMerged[i], 4).setValue(true);
+  }
+
+  return changelog;
 }
 
 // エクスポート用にスプレッドシートをコピー
