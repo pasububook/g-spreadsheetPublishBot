@@ -1,102 +1,1093 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <style>
-      body {
-        font-family: sans-serif;
-        padding: 15px;
-        background-color: #f5f5f5;
-      }
-      textarea {
-        width: 100%;
-        height: 150px;
-        box-sizing: border-box;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 10px;
-        font-size: 14px;
-        resize: vertical;
-      }
-      .button-container {
-        text-align: right;
-        margin-top: 10px;
-      }
-      button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      button:hover {
-        background-color: #45a049;
-      }
-      button:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-      }
-      #status {
-        margin-top: 10px;
-        color: #555;
-      }
-    </style>
-  </head>
-  <body>
-    <p>変更内容を複数行で記述できます。</p>
-    <textarea id="changesInput" placeholder="例: 
-- 新機能の追加
-- レイアウトの調整
-- バグの修正"></textarea>
-    <div class="button-container">
-      <button id="publishButton" onclick="saveChanges()">保存</button>
-      <button onclick="google.script.host.close()">キャンセル</button>
-    </div>
-    <div id="status"></div>
-    <script>
-      function saveChanges() {
-        // 出版ボタンを取得し、処理中は無効にする
-        const publishButton = document.getElementById('publishButton');
-        publishButton.disabled = true;
-        publishButton.textContent = '保存中...'; // ボタンのテキストを変更してユーザーにフィードバック
-        
-        const changesTxt = document.getElementById('changesInput').value;
-        const statusDiv = document.getElementById('status');
-        
-        let changes = []
-        if (String(changesTxt).includes('\n')) {
-          changes = changesTxt.split('\n');
-        } else if (String(changesTxt).includes(',')) {
-          changes = changesTxt.split(',');
-        } else {
-          changes = [changesTxt];
-        }
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    :root {
+      --primary-color: #4285f4;
+      --hover-bg: #f1f3f4;
+      --border-color: #e0e0e0;
+      --text-color: #3c4043;
+      --placeholder-color: #9aa0a6;
+      /* 定義済みカラー (仕様書に基づく) */
+      --tag-textbook-bg: #D6EAF8; --tag-textbook-dot: #2E86C1;
+      --tag-material-bg: #D5F5E3; --tag-material-dot: #27AE60;
+      --tag-work-bg: #FAE5D3;     --tag-work-dot: #E67E22;
+      --tag-print-bg: #E8DAEF;    --tag-print-dot: #884EA0;
+      --tag-other-bg: #F2F4F4;    --tag-other-dot: #7F8C8D;
+    }
 
-        // Google Apps Scriptの関数を呼び出してデータを渡す
-        google.script.run
-          .withSuccessHandler(function() {
-            statusDiv.textContent = '保存完了';
-            google.script.host.close(); // 成功したらダイアログを閉じる
-          })
-          .withFailureHandler(function(error) {
-            statusDiv.textContent = 'エラーが発生しました: ' + error.message;
-            publishButton.disabled = false; // エラー時はボタンを再度有効にする
-            publishButton.textContent = '保存';
-          })
-          .saveCommitRevision(changes);
-      }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #fff;
+      color: var(--text-color);
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
-      document.getElementById('changesInput').addEventListener('keydown', function(event) {
-        // CtrlキーまたはCmdキー(Mac)が押されながらEnterキーが押されたかチェック
-        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-          // デフォルトのEnterキーの動作（改行）をキャンセル
-          event.preventDefault();
-          // 送信関数を呼び出し
-          saveChanges();
+    /* --- Footer --- */
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border-color);
+      background: #fff;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    /* --- List Container --- */
+    #list-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+      position: relative;
+    }
+
+    /* --- Empty State (Placeholder) --- */
+    #empty-state {
+      flex: 1;
+      display: none; /* JSで制御 */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--placeholder-color);
+      text-align: center;
+      user-select: none;
+    }
+    #empty-state .material-symbols-outlined {
+      font-size: 48px;
+      color: #dadce0;
+      margin-bottom: 12px;
+    }
+    #empty-state p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* --- List Item Row --- */
+    .row {
+      display: flex;
+      align-items: flex-start;
+      padding: 4px 2px; /* 左右パディングを縮小 (8px -> 2px) */
+      position: relative;
+      transition: background-color 0.1s;
+      border-bottom: 1px solid transparent;
+    }
+    .row:hover {
+      background-color: var(--hover-bg);
+    }
+    .row:hover .btn-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .row.dragging {
+      opacity: 0.9;
+      background-color: #e8f0fe;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      position: absolute; /* Dragging logic handles pos */
+      width: 100%;
+      pointer-events: none; /* Let events pass through to find drop target */
+    }
+    /* Placeholder for drag gap */
+    .row-placeholder {
+      height: 40px;
+      background: #f8f9fa;
+      border: 1px dashed #ccc;
+      margin: 4px 8px;
+      border-radius: 4px;
+    }
+
+    /* Icons */
+    .icon-btn {
+      font-family: 'Material Symbols Outlined';
+      font-size: 20px;
+      color: #5f6368;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    /* Handle: 透明なドラッグ領域に変更 */
+    .handle {
+      cursor: grab;
+      touch-action: none; /* Prevent scroll on mobile drag */
+      width: 12px; /* 幅を縮小 (16px -> 12px) */
+      height: 32px;
+      margin-right: 0px; /* マージンを削除 (4px -> 0px) */
+      /* アイコンを非表示にするため文字色やフォント指定は削除または透明化 */
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .handle:active {
+      cursor: grabbing;
+    }
+    
+    /* Subject Select */
+    .subject-select {
+      appearance: none;
+      border: 1px solid transparent;
+      background-color: transparent;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 12px;
+      color: #5f6368;
+      padding: 2px 2px; /* パディング縮小 */
+      border-radius: 4px;
+      margin-right: 4px; /* マージン縮小 (8px -> 4px) */
+      margin-top: 4px; /* Align with text */
+      cursor: pointer;
+      width: 60px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .subject-select:hover, .subject-select:focus {
+      background-color: #fff;
+      border-color: #dadce0;
+      outline: none;
+    }
+    .subject-select option {
+      color: #3c4043;
+    }
+    /* Empty state styling */
+    .subject-select:invalid {
+      color: #9aa0a6;
+    }
+
+    /* Input Area */
+    .editor {
+      flex: 1;
+      min-height: 32px;
+      padding: 5px 4px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.5;
+      border-bottom: 1px solid transparent;
+      word-break: break-word;
+    }
+    .editor:focus {
+      border-bottom: 2px solid var(--primary-color);
+    }
+    .editor:empty::before {
+      content: attr(placeholder);
+      color: var(--placeholder-color);
+      pointer-events: none;
+    }
+
+    /* Delete Button */
+    .btn-delete {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      color: #5f6368;
+    }
+    .btn-delete:hover {
+      background-color: rgba(0,0,0,0.05);
+      color: #d93025;
+    }
+
+    /* --- Tags (Pills) --- */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 12px;
+      padding: 0 8px;
+      margin: 0 2px;
+      font-size: 13px;
+      height: 22px;
+      vertical-align: middle;
+      user-select: none;
+      cursor: default;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      /* カーソルが入らないように念のため指定 */
+      user-select: none;
+    }
+    .tag::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background-color: var(--tag-dot, #7F8C8D);
+    }
+    /* Tag Variations */
+    .tag[data-type="教科書"] { background-color: var(--tag-textbook-bg); --tag-dot: var(--tag-textbook-dot); }
+    .tag[data-type="資料集"] { background-color: var(--tag-material-bg); --tag-dot: var(--tag-material-dot); }
+    .tag[data-type="ワーク"] { background-color: var(--tag-work-bg);     --tag-dot: var(--tag-work-dot); }
+    .tag[data-type="プリント"] { background-color: var(--tag-print-bg);   --tag-dot: var(--tag-print-dot); }
+    .tag[data-type="その他"] { background-color: var(--tag-other-bg);     --tag-dot: var(--tag-other-dot); }
+
+    /* --- Suggestion Box --- */
+    #suggestion-box {
+      position: fixed;
+      width: 280px;
+      max-height: 200px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      border: 1px solid #e0e0e0;
+    }
+    .suggestion-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .suggestion-item:hover, .suggestion-item.selected {
+      background-color: #f1f3f4;
+    }
+    .s-cat {
+      font-size: 11px;
+      color: #888;
+      background: #f1f1f1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* --- Add Button --- */
+    .add-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .add-btn:hover {
+      background-color: #f8fbff;
+    }
+    .add-btn span {
+      margin-right: 8px;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-save { background-color: var(--primary-color); color: white; }
+    .btn-cancel { background-color: transparent; color: #5f6368; }
+    .btn-save:disabled { background-color: #ccc; }
+
+  </style>
+</head>
+<body>
+
+  <!-- Header removed -->
+
+  <div id="list-container">
+    <!-- Rows will be injected here -->
+  </div>
+  
+  <!-- Empty State Placeholder -->
+  <div id="empty-state">
+    <span class="material-symbols-outlined">playlist_add</span>
+    <p>条件がありません。<br>「条件を追加」ボタンで追加してください。</p>
+  </div>
+
+  <div style="padding: 0 8px 8px 8px;">
+    <button class="add-btn" id="add-row-btn">
+      <span class="material-symbols-outlined">add</span> 条件を追加
+    </button>
+  </div>
+
+  <div class="footer">
+    <button class="action-btn btn-cancel" onclick="google.script.host.close()">キャンセル</button>
+    <button class="action-btn btn-save" id="save-btn">保存</button>
+  </div>
+  <div id="status-msg" style="text-align:center; font-size:12px; color:#666; padding-bottom:4px;"></div>
+
+  <!-- Suggestion Popup -->
+  <div id="suggestion-box"></div>
+
+<script>
+/**
+ * 定義済みデータ
+ */
+const TAG_CATEGORIES = {
+  "教科書": { color: "#2E86C1", bg: "#D6EAF8" },
+  "資料集": { color: "#27AE60", bg: "#D5F5E3" },
+  "ワーク": { color: "#E67E22", bg: "#FAE5D3" },
+  "プリント": { color: "#884EA0", bg: "#E8DAEF" },
+  "その他": { color: "#7F8C8D", bg: "#F2F4F4" }
+};
+
+/**
+ * SUBJECT_LIST
+ * 利用可能な教科の正式名称リスト
+ */
+const SUBJECT_LIST = [
+  "国語/論理国語-1",
+  "国語/古典探求",
+  "数学/理数数学II-1",
+  "理科/理数化学-2",
+  "理科/理数物理-2②",
+  "社会/地理総合",
+  "英語/英コミュII",
+  "英語/論理・表現II"
+];
+
+/**
+ * SUGGEST_DB
+ * タグ入力時のサジェスト候補、および教科情報の自動入力用データベース
+ */
+const SUGGEST_DB = [
+  // ==========================================
+  // 国語/論理国語-1
+  // ==========================================
+  {
+    name: "近現代文学コレクション",
+    type: "教科書",
+    subject: "国語/論理国語-1",
+    keywords: [
+      "kingendai", "bungaku", "collection", // ローマ字
+      "k", "b", "c",                        // 頭文字
+      "きんげんだい", "ぶんがく", "これくしょん" // ひらがな
+    ]
+  },
+  {
+    name: "錬成現代文",
+    type: "ワーク",
+    subject: "国語/論理国語-1",
+    keywords: [
+      "rensei", "gendai", "bun",
+      "r", "g", "b",
+      "れんせい", "げんだい", "ぶん"
+    ]
+  },
+  {
+    name: "入試頻出漢字 + 現代文重要語 TOP2500",
+    type: "ワーク",
+    subject: "国語/論理国語-1",
+    keywords: [
+      "nyushi", "hinshutsu", "kanji", "gendai", "top2500", "2500",
+      "n", "h", "k", "g",
+      "にゅうし", "かんじ", "げんだい", "じゅうようご"
+    ]
+  },
+  {
+    name: "WINSTEP2",
+    type: "ワーク",
+    subject: "国語/論理国語-1",
+    keywords: [
+      "winstep", "win", "step", "2",
+      "w", "s",
+      "うぃんすてっぷ", "ういんすてっぷ"
+    ]
+  },
+
+  // ==========================================
+  // 国語/古典探求
+  // ==========================================
+  {
+    name: "古文単語 三三〇",
+    type: "ワーク",
+    subject: "国語/古典探求",
+    keywords: [
+      "kobun", "tango", "330",
+      "k", "t",
+      "こぶん", "たんご", "さんさんまる"
+    ]
+  },
+
+  // ==========================================
+  // 数学/理数数学II-1
+  // ==========================================
+  {
+    name: "サクシード",
+    type: "ワーク",
+    subject: "数学/理数数学II-1",
+    keywords: [
+      "succeed", "sakushido",
+      "s",
+      "さくしーど"
+    ]
+  },
+  {
+    name: "フォーカスゴールド",
+    type: "ワーク",
+    subject: "数学/理数数学II-1",
+    keywords: [
+      "focus", "gold", "focusgold",
+      "f", "g",
+      "ふぉーかす", "ごーるど"
+    ]
+  },
+
+  // ==========================================
+  // 理科/理数化学-2
+  // ==========================================
+  {
+    name: "セミナー化学基礎+化学",
+    type: "ワーク",
+    subject: "理科/理数化学-2",
+    keywords: [
+      "seminar", "kagaku", "kiso",
+      "s", "k",
+      "せみなー", "かがく", "きそ"
+    ]
+  },
+
+  // ==========================================
+  // 理科/理数物理-2②
+  // ==========================================
+  {
+    name: "総合物理 [1]",
+    type: "教科書",
+    subject: "理科/理数物理-2②",
+    keywords: [
+      "sougou", "butsuri", "1",
+      "s", "b",
+      "そうごう", "ぶつり"
+    ]
+  },
+  {
+    name: "総合物理 [2]",
+    type: "教科書",
+    subject: "理科/理数物理-2②",
+    keywords: [
+      "sougou", "butsuri", "2",
+      "s", "b",
+      "そうごう", "ぶつり"
+    ]
+  },
+  {
+    name: "リードα",
+    type: "ワーク",
+    subject: "理科/理数物理-2②",
+    keywords: [
+      "read", "alpha", "lead",
+      "r", "a", "l",
+      "りーど", "あるふぁ"
+    ]
+  },
+
+  // ==========================================
+  // 社会/地理総合
+  // ==========================================
+  {
+    name: "準拠ノート",
+    type: "ワーク",
+    subject: "社会/地理総合",
+    keywords: [
+      "junkyo", "note", "chiri", // 地理総合のノートなのでchiriも含める
+      "j", "n", "c",
+      "じゅんきょ", "のーと", "ちり"
+    ]
+  },
+
+  // ==========================================
+  // 英語/英コミュII
+  // ==========================================
+  {
+    name: "Heartening II",
+    type: "教科書",
+    subject: "英語/英コミュII",
+    keywords: [
+      "heartening", "commu", "2",
+      "h", "c",
+      "はーとにんぐ", "こみゅ"
+    ]
+  },
+  {
+    name: "Cutting Edge",
+    type: "ワーク",
+    subject: "英語/英コミュII",
+    keywords: [
+      "cutting", "edge",
+      "c", "e",
+      "かっていんぐ", "えっじ"
+    ]
+  },
+
+  // ==========================================
+  // 英語/論理・表現II
+  // ==========================================
+  {
+    name: "EARTHRISE II Advanced",
+    type: "教科書",
+    subject: "英語/論理・表現II",
+    keywords: [
+      "earthrise", "advanced", "2",
+      "e", "a",
+      "あーすらいず", "あどばんす"
+    ]
+  },
+  {
+    name: "Crash Course 英作文",
+    type: "ワーク",
+    subject: "英語/論理・表現II",
+    keywords: [
+      "crash", "course", "eisakubun",
+      "c", "e",
+      "くらっしゅ", "こーす", "えいさくぶん"
+    ]
+  }
+];
+
+function getCategory(name, explicitType) {
+  if (explicitType && TAG_CATEGORIES[explicitType]) return explicitType;
+  const hit = SUGGEST_DB.find(d => d.name === name);
+  if (hit && TAG_CATEGORIES[hit.type]) return hit.type;
+  return "その他";
+}
+
+function getSubject(name) {
+  const hit = SUGGEST_DB.find(d => d.name === name);
+  return hit ? hit.subject : null;
+}
+
+/**
+ * アプリケーション状態管理
+ */
+let draggedRow = null;
+let dragPlaceholder = null;
+let activeEditor = null;
+let suggestionMode = false;
+let suggestionTrigger = null; 
+let suggestionIndex = 0;
+let filteredSuggestions = [];
+let queryStartRange = null;
+
+const container = document.getElementById('list-container');
+const emptyState = document.getElementById('empty-state');
+const suggestionBox = document.getElementById('suggestion-box');
+
+// 初期化
+window.onload = () => {
+  addNewRow();
+};
+
+// リストの表示状態更新（Empty State制御）
+function updateEmptyState() {
+  if (container.children.length === 0) {
+    container.style.display = 'none';
+    emptyState.style.display = 'flex';
+  } else {
+    container.style.display = 'block';
+    emptyState.style.display = 'none';
+  }
+}
+
+/**
+ * リスト操作: 行の作成
+ */
+function addNewRow(initialHtml = "", initialSubject = "") {
+  const id = "row-" + Date.now() + Math.random().toString(36).substr(2, 9);
+  const rowDiv = document.createElement('div');
+  rowDiv.className = 'row';
+  rowDiv.id = id;
+  
+  // Drag Handle (透明な領域として残す)
+  const handle = document.createElement('span');
+  handle.className = 'handle'; 
+  handle.onpointerdown = handleDragStart;
+
+  // Subject Select
+  const select = document.createElement('select');
+  select.className = 'subject-select';
+  
+  const defaultOption = document.createElement('option');
+  defaultOption.value = "";
+  defaultOption.text = "教科";
+  defaultOption.disabled = true;
+  defaultOption.selected = true;
+  defaultOption.hidden = true;
+  select.appendChild(defaultOption);
+
+  SUBJECT_LIST.forEach(sub => {
+    const opt = document.createElement('option');
+    opt.value = sub;
+    opt.text = sub;
+    if (sub === initialSubject) opt.selected = true;
+    select.appendChild(opt);
+  });
+  
+  if (initialSubject) select.value = initialSubject;
+
+  // 教科選択時のショートカットキー対応
+  select.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      document.getElementById('save-btn').click();
+    }
+  });
+
+  // Editor
+  const editor = document.createElement('div');
+  editor.className = 'editor';
+  editor.contentEditable = true;
+  editor.placeholder = "条件を入力... (<, @ でタグ追加)";
+  editor.innerHTML = initialHtml;
+  
+  // Events
+  editor.addEventListener('focus', () => { activeEditor = editor; });
+  editor.addEventListener('keydown', handleEditorKeydown);
+  editor.addEventListener('input', handleEditorInput);
+  editor.addEventListener('blur', () => {
+    setTimeout(() => { if(!suggestionBox.matches(':hover')) closeSuggestions(); }, 200);
+  });
+
+  // Delete Button
+  const delBtn = document.createElement('span');
+  delBtn.className = 'icon-btn btn-delete material-symbols-outlined';
+  delBtn.textContent = 'close';
+  delBtn.onclick = () => {
+    // 常に削除可能に変更
+    rowDiv.remove();
+    updateEmptyState();
+  };
+
+  rowDiv.appendChild(handle);
+  rowDiv.appendChild(select); 
+  rowDiv.appendChild(editor);
+  rowDiv.appendChild(delBtn);
+
+  container.appendChild(rowDiv);
+  
+  updateEmptyState();
+  editor.focus();
+  return rowDiv;
+}
+
+/**
+ * テキスト編集とタグ機能
+ */
+function handleEditorInput(e) {
+  if (!activeEditor) return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  
+  const text = activeEditor.innerText;
+  const range = sel.getRangeAt(0);
+  const startOffset = range.startOffset;
+  const container = range.startContainer;
+  
+  if (container.nodeType === Node.TEXT_NODE) {
+    const textContent = container.textContent;
+    const charBefore = textContent[startOffset - 1];
+    
+    if (["<", "＜", "`", "@"].includes(charBefore)) {
+      suggestionMode = true;
+      suggestionTrigger = charBefore; 
+      queryStartRange = range.cloneRange();
+      queryStartRange.setStart(container, startOffset - 1);
+      showSuggestions("");
+      return;
+    }
+
+    if (suggestionMode && suggestionTrigger !== "@" && [">", "＞", "`"].includes(charBefore)) {
+       // 自動確定ロジック
+    }
+  }
+
+  if (suggestionMode && queryStartRange) {
+    const currentRange = sel.getRangeAt(0);
+    if (currentRange.startContainer === queryStartRange.startContainer) {
+      const queryText = currentRange.startContainer.textContent.substring(
+        queryStartRange.startOffset + 1,
+        currentRange.startOffset
+      );
+      
+      if (suggestionTrigger !== "@") {
+        const lastChar = queryText.slice(-1);
+        if ([">", "＞", "`"].includes(lastChar)) {
+          const finalQuery = queryText.slice(0, -1);
+          insertTag(finalQuery, true);
+          return;
         }
+      }
+      
+      showSuggestions(queryText);
+    } else {
+      closeSuggestions();
+    }
+  }
+}
+
+function handleEditorKeydown(e) {
+  if (e.isComposing) return;
+
+  // ショートカットキー対応: Ctrl+Enter / Cmd+Enter で保存
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    document.getElementById('save-btn').click();
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (suggestionMode && filteredSuggestions.length > 0) {
+      const selected = filteredSuggestions[suggestionIndex];
+      insertTag(selected.name);
+    } else {
+      const currentRow = activeEditor.closest('.row');
+      const newRow = addNewRow();
+      currentRow.after(newRow);
+      newRow.querySelector('.editor').focus();
+    }
+    return;
+  }
+
+  if (e.key === 'Backspace') {
+    const sel = window.getSelection();
+    if (sel.isCollapsed && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      
+      if (range.startOffset === 0 && range.startContainer === activeEditor || 
+         (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset === 0 && range.startContainer.previousSibling === null)) {
+        
+        if (activeEditor.innerText.trim() === "") {
+          const currentRow = activeEditor.closest('.row');
+          const prevRow = currentRow.previousElementSibling;
+          if (prevRow) {
+            // 前の行がある場合は削除して移動
+            e.preventDefault();
+            currentRow.remove();
+            updateEmptyState();
+            const prevEditor = prevRow.querySelector('.editor');
+            const newRange = document.createRange();
+            newRange.selectNodeContents(prevEditor);
+            newRange.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            prevEditor.focus();
+          } else if (container.children.length === 1) {
+            // 最後の1行かつ空なら、Backspaceで削除するか？
+            // ユーザー体験的には「クリア」で留まることが多いが
+            // 明示的に削除したい場合はボタンを押してもらう。
+            // ここでは空行削除は「前の行がある時」のみとする（既存仕様維持）
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  if (suggestionMode) {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      suggestionIndex = (suggestionIndex > 0) ? suggestionIndex - 1 : filteredSuggestions.length - 1;
+      renderSuggestions();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      suggestionIndex = (suggestionIndex < filteredSuggestions.length - 1) ? suggestionIndex + 1 : 0;
+      renderSuggestions();
+    } else if (e.key === 'Escape') {
+      closeSuggestions();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (filteredSuggestions.length > 0) {
+        insertTag(filteredSuggestions[suggestionIndex].name);
+      }
+    }
+  }
+}
+
+/**
+ * タグ挿入 & 教科自動入力
+ */
+function insertTag(text, isAutoConfirm = false) {
+  if (!queryStartRange) return;
+
+  const sel = window.getSelection();
+  const currentRange = sel.getRangeAt(0);
+  
+  const rangeToReplace = document.createRange();
+  rangeToReplace.setStart(queryStartRange.startContainer, queryStartRange.startOffset);
+  rangeToReplace.setEnd(currentRange.endContainer, currentRange.endOffset);
+  rangeToReplace.deleteContents();
+
+  const category = getCategory(text);
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.dataset.type = category;
+  tag.contentEditable = false;
+  tag.textContent = text;
+  
+  rangeToReplace.insertNode(tag);
+  
+  // 変更点: IMEの不安定な挙動を防ぐため、NBSP(\u00A0)を使用し、
+  // カーソルをテキストノードの「中（末尾）」に明示的に配置する
+  const space = document.createTextNode('\u00A0');
+  tag.after(space);
+  
+  const newRange = document.createRange();
+  // setStartAfter(space) ではなく、テキストノードの1文字目(直後)を指定
+  newRange.setStart(space, 1);
+  newRange.setEnd(space, 1);
+  
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  
+  // 念のためフォーカスを戻す
+  if (activeEditor) activeEditor.focus();
+
+  const subject = getSubject(text);
+  if (subject && activeEditor) {
+    const row = activeEditor.closest('.row');
+    const select = row.querySelector('.subject-select');
+    if (select && select.value === "") {
+      select.value = subject;
+    }
+  }
+
+  closeSuggestions();
+}
+
+/**
+ * サジェスト処理
+ */
+function showSuggestions(query) {
+  const lowerQ = query.toLowerCase();
+  
+  if (query === "") {
+    filteredSuggestions = SUGGEST_DB;
+  } else {
+    filteredSuggestions = SUGGEST_DB.filter(item => {
+      if (item.name.toLowerCase().includes(lowerQ)) return true;
+      return item.keywords.some(k => k.toLowerCase().startsWith(lowerQ));
+    });
+  }
+  
+  if (query !== "" && suggestionTrigger !== "@") {
+    const exists = filteredSuggestions.some(i => i.name === query);
+    if (!exists) {
+      filteredSuggestions.push({ name: query, type: "その他", isNew: true });
+    }
+  }
+
+  suggestionIndex = 0;
+  if (filteredSuggestions.length === 0) {
+    suggestionBox.style.display = 'none';
+  } else {
+    renderSuggestions();
+    positionSuggestionBox();
+  }
+}
+
+function renderSuggestions() {
+  suggestionBox.innerHTML = '';
+  filteredSuggestions.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item' + (idx === suggestionIndex ? ' selected' : '');
+    div.onmousedown = (e) => {
+      e.preventDefault();
+      insertTag(item.name);
+    };
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = item.name;
+    
+    const metaDiv = document.createElement('div');
+    metaDiv.style.display = 'flex';
+    metaDiv.style.gap = '4px';
+
+    if (item.subject) {
+       const subSpan = document.createElement('span');
+       subSpan.className = 's-cat';
+       subSpan.style.backgroundColor = '#e8f0fe';
+       subSpan.style.color = '#1967d2';
+       subSpan.textContent = item.subject;
+       metaDiv.appendChild(subSpan);
+    }
+
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 's-cat';
+    typeSpan.textContent = item.isNew ? "新規" : item.type;
+    
+    if (!item.isNew && TAG_CATEGORIES[item.type]) {
+      const catStyle = TAG_CATEGORIES[item.type];
+      typeSpan.style.backgroundColor = catStyle.bg;
+      typeSpan.style.color = catStyle.color;
+    }
+
+    metaDiv.appendChild(typeSpan);
+    
+    div.appendChild(nameSpan);
+    div.appendChild(metaDiv);
+    suggestionBox.appendChild(div);
+  });
+  suggestionBox.style.display = 'block';
+  
+  const selectedEl = suggestionBox.children[suggestionIndex];
+  if (selectedEl) {
+    if (selectedEl.offsetTop < suggestionBox.scrollTop) {
+      suggestionBox.scrollTop = selectedEl.offsetTop;
+    } else if (selectedEl.offsetTop + selectedEl.offsetHeight > suggestionBox.scrollTop + suggestionBox.offsetHeight) {
+      suggestionBox.scrollTop = selectedEl.offsetTop + selectedEl.offsetHeight - suggestionBox.offsetHeight;
+    }
+  }
+}
+
+function closeSuggestions() {
+  suggestionMode = false;
+  suggestionTrigger = null; 
+  suggestionBox.style.display = 'none';
+  queryStartRange = null;
+}
+
+function positionSuggestionBox() {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0).cloneRange();
+  const rect = range.getBoundingClientRect();
+  
+  let top = rect.bottom + 5;
+  if (top + 200 > window.innerHeight) {
+    top = rect.top - 205;
+  }
+  
+  suggestionBox.style.top = top + 'px';
+  suggestionBox.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+}
+
+/**
+ * Drag & Drop
+ */
+function handleDragStart(e) {
+  const handle = e.target;
+  const row = handle.closest('.row');
+  if (!row) return;
+
+  e.preventDefault();
+  handle.setPointerCapture(e.pointerId);
+
+  draggedRow = row;
+  draggedRow.classList.add('dragging');
+
+  dragPlaceholder = document.createElement('div');
+  dragPlaceholder.className = 'row-placeholder';
+  row.parentNode.insertBefore(dragPlaceholder, row);
+
+  const startY = e.clientY;
+  const rect = row.getBoundingClientRect();
+  const offsetY = startY - rect.top;
+
+  const onPointerMove = (moveEvent) => {
+    const currentY = moveEvent.clientY;
+    draggedRow.style.top = (currentY - container.getBoundingClientRect().top - offsetY) + 'px';
+    
+    const siblings = [...container.children].filter(c => c !== draggedRow && c !== dragPlaceholder);
+    const hit = siblings.find(sib => {
+      const r = sib.getBoundingClientRect();
+      return currentY >= r.top && currentY <= r.bottom;
+    });
+
+    if (hit) {
+      const rect = hit.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (currentY < mid) {
+        container.insertBefore(dragPlaceholder, hit);
+      } else {
+        container.insertBefore(dragPlaceholder, hit.nextSibling);
+      }
+    }
+  };
+
+  const onPointerUp = (upEvent) => {
+    handle.releasePointerCapture(upEvent.pointerId);
+    handle.removeEventListener('pointermove', onPointerMove);
+    handle.removeEventListener('pointerup', onPointerUp);
+
+    container.insertBefore(draggedRow, dragPlaceholder);
+    dragPlaceholder.remove();
+    draggedRow.classList.remove('dragging');
+    draggedRow.style.top = '';
+    draggedRow.style.position = '';
+    
+    draggedRow = null;
+    dragPlaceholder = null;
+  };
+
+  handle.addEventListener('pointermove', onPointerMove);
+  handle.addEventListener('pointerup', onPointerUp);
+}
+
+document.getElementById('add-row-btn').onclick = () => {
+  addNewRow();
+};
+
+/**
+ * 保存処理 (GAS連携)
+ */
+document.getElementById('save-btn').onclick = function() {
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  
+  const rowsData = [];
+  const rowElements = container.querySelectorAll('.row');
+  
+  rowElements.forEach(row => {
+    const editor = row.querySelector('.editor');
+    const select = row.querySelector('.subject-select');
+    
+    if (editor.innerText.trim() !== "" || editor.querySelector('.tag')) {
+      const subject = select ? select.value : "";
+      
+      // コンテンツの変換処理: タグ(span)を <タグ名> に変換
+      const tempDiv = editor.cloneNode(true);
+      const tags = tempDiv.querySelectorAll('.tag');
+      tags.forEach(tagEl => {
+        const tagName = tagEl.textContent;
+        const textNode = document.createTextNode(`<${tagName}>`);
+        tagEl.parentNode.replaceChild(textNode, tagEl);
       });
-    </script>
-  </body>
+      
+      // テキストとして取得
+      let content = tempDiv.innerText;
+
+      // NBSP(\u00A0)を通常のスペースに置換して正規化
+      content = content.replace(/\u00A0/g, ' ');
+
+      // 2次元配列として追加 [教科, 内容]
+      rowsData.push([subject, content]);
+    }
+  });
+
+  google.script.run
+    .withSuccessHandler(() => {
+      document.getElementById('status-msg').textContent = '保存しました';
+      setTimeout(() => google.script.host.close(), 1000);
+    })
+    .withFailureHandler((err) => {
+      document.getElementById('status-msg').textContent = 'エラー: ' + err.message;
+      btn.disabled = false;
+      btn.textContent = '保存';
+    })
+    .saveCommitRevision(rowsData);
+};
+</script>
+</body>
 </html>
