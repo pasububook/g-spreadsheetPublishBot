@@ -1046,7 +1046,7 @@ document.getElementById('save-btn').onclick = function() {
   btn.disabled = true;
   btn.textContent = '保存中...';
   
-  const rowsData = [];
+  const changes = [];
   const rowElements = container.querySelectorAll('.row');
   
   rowElements.forEach(row => {
@@ -1071,10 +1071,30 @@ document.getElementById('save-btn').onclick = function() {
       // NBSP(\u00A0)を通常のスペースに置換して正規化
       content = content.replace(/\u00A0/g, ' ');
 
-      // 2次元配列として追加 [教科, 内容]
-      rowsData.push([subject, content]);
+      // 旧フォーム互換: 改行・カンマ区切りを分割して1件ずつ登録
+      const parts = content
+        .split(/[\n,]/)
+        .map(part => part.trim())
+        .filter(Boolean);
+
+      const subjectPrefix = subject ? `[${subject}] ` : '';
+      parts.forEach(part => {
+        changes.push(subjectPrefix + part);
+      });
+
+      // 区切りで分割されなかった場合（空白のみを除く）も1件として保持
+      if (parts.length === 0 && content.trim() !== '') {
+        changes.push(subjectPrefix + content.trim());
+      }
     }
   });
+
+  if (changes.length === 0) {
+    document.getElementById('status-msg').textContent = '保存する条件がありません';
+    btn.disabled = false;
+    btn.textContent = '保存';
+    return;
+  }
 
   google.script.run
     .withSuccessHandler(() => {
@@ -1086,7 +1106,7 @@ document.getElementById('save-btn').onclick = function() {
       btn.disabled = false;
       btn.textContent = '保存';
     })
-    .saveCommitRevision(rowsData);
+    .saveCommitRevision(changes);
 };
 </script>
 </body>
