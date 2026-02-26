@@ -90,29 +90,27 @@ function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
     }
 
     const formulas = range.getFormulas();
-    let hasTimeFormula = false;
-    const rewrittenFormulas = formulas.map(row => row.map(formula => {
-      if (!formula) {
-        return formula;
+    for (let rowIndex = 0; rowIndex < formulas.length; rowIndex++) {
+      for (let colIndex = 0; colIndex < formulas[rowIndex].length; colIndex++) {
+        const formula = formulas[rowIndex][colIndex];
+        if (!formula) {
+          continue;
+        }
+
+        const rewritten = formula
+          .replace(/NOW\(\)/gi, '(' + nowSerial + ')')
+          .replace(/TODAY\(\)/gi, '(' + todaySerial + ')');
+
+        if (rewritten !== formula) {
+          range.getCell(rowIndex + 1, colIndex + 1).setFormula(rewritten);
+        }
       }
-
-      const rewritten = formula
-        .replace(/NOW\(\)/gi, '(' + nowSerial + ')')
-        .replace(/TODAY\(\)/gi, '(' + todaySerial + ')');
-
-      if (rewritten !== formula) {
-        hasTimeFormula = true;
-      }
-
-      return rewritten;
-    }));
-
-    if (hasTimeFormula) {
-      range.setFormulas(rewrittenFormulas);
     }
 
+    const numberFormats = range.getNumberFormats();
     const values = range.getValues();
     range.setValues(values);
+    range.setNumberFormats(numberFormats);
   }
 }
 

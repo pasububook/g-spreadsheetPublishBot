@@ -14,14 +14,8 @@ function createFolderWithCurrentTimestamp(parentFolderId, baseTimestamp) {
   const now = baseTimestamp || new Date();
 
   // フォーマットされた日付と時刻の文字列を作成
-  // YYYYMMDD_HHmm 形式
-  const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 月は0から始まるため+1
-  const day = now.getDate().toString().padStart(2, '0');
-  const hours = now.getHours().toString().padStart(2, '0');
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-
-  const folderName = `${year}${month}${day}_${hours}${minutes}`;
+  // YYYYMMDD_HHmmss 形式
+  const folderName = Utilities.formatDate(now, timeZone, 'yyyyMMdd_HHmmss');
 
   try {
     const targetParentFolderId = (parentFolderId || '').toString().trim();
