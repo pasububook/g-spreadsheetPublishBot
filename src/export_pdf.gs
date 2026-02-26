@@ -5,9 +5,10 @@
  * @param {string} sheetName - エクスポートするシートの名前。
  * @param {string} folderId - エクスポートしたPDFを保存するフォルダのID。
  * @param {boolean} includeTimestamp - PDFファイル名にエクスポート時刻を含めるかどうか (true/false)。
+ * @param {Date=} baseTimestamp - PDFファイル名に利用する基準時刻。未指定時は現在時刻。
  * @returns {Object} エクスポートしたPDFのファイル名、ファイルID、共有URLを含むオブジェクト。
  */
-function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) {
+function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp, baseTimestamp) {
   try {
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     const sheet = spreadsheet.getSheetByName(sheetName);
@@ -51,7 +52,7 @@ function exportSheetAsPdf(spreadsheetId, sheetName, folderId, includeTimestamp) 
     let fileName = sheetName;
     if (includeTimestamp) {
       // ファイル名にエクスポート日時を含める
-      const now = new Date();
+      const now = baseTimestamp || new Date();
       const year = now.getFullYear();
       const month = ('0' + (now.getMonth() + 1)).slice(-2);
       const day = ('0' + now.getDate()).slice(-2);

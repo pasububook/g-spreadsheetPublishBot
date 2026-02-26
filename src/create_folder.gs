@@ -3,14 +3,15 @@
  * 例: 現在時刻が2025年6月14日21時27分の場合、フォルダ名は「20250614_2127」となります。
  *
  * @param {string} parentFolderId 新しいフォルダを作成する親フォルダのID。
+ * @param {Date=} baseTimestamp フォルダ名に利用する基準時刻。未指定時は現在時刻。
  * @return {string} 作成された新しいフォルダのID。
  */
-function createFolderWithCurrentTimestamp(parentFolderId) {
+function createFolderWithCurrentTimestamp(parentFolderId, baseTimestamp) {
   // タイムゾーンを日本時間に設定
   const timeZone = 'Asia/Tokyo';
 
   // 現在の日時を取得
-  const now = new Date();
+  const now = baseTimestamp || new Date();
 
   // フォーマットされた日付と時刻の文字列を作成
   // YYYYMMDD_HHmm 形式

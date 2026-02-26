@@ -64,8 +64,62 @@ function getChangelogs(spreadsheetId, sheetName) {
   return changelog
 }
 
+// エクスポート用にスプレッドシートをコピー
+function createExportSpreadsheetCopy(spreadsheetId, targetFolderId, baseTimestamp) {
+  const sourceFile = DriveApp.getFileById(spreadsheetId);
+  const targetFolder = DriveApp.getFolderById(targetFolderId);
+  const exportTime = baseTimestamp || new Date();
+  const timestamp = Utilities.formatDate(exportTime, 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+  const copiedFile = sourceFile.makeCopy(sourceFile.getName() + ' - export-' + timestamp, targetFolder);
+  return copiedFile.getId();
+}
+
+// コピーしたスプレッドシート内の値を固定化 (数式を値に変換)
+function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  const sheets = ss.getSheets();
+  const exportTime = baseTimestamp || new Date();
+  const nowSerial = exportTime.getTime() / (24 * 60 * 60 * 1000) + 25569;
+  const todaySerial = Math.floor(nowSerial);
+
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    const range = sheet.getDataRange();
+    if (range.getNumRows() === 0 || range.getNumColumns() === 0) {
+      continue;
+    }
+
+    const formulas = range.getFormulas();
+    let hasTimeFormula = false;
+    const rewrittenFormulas = formulas.map(row => row.map(formula => {
+      if (!formula) {
+        return formula;
+      }
+
+      const rewritten = formula
+        .replace(/NOW\(\)/gi, '(' + nowSerial + ')')
+        .replace(/TODAY\(\)/gi, '(' + todaySerial + ')');
+
+      if (rewritten !== formula) {
+        hasTimeFormula = true;
+      }
+
+      return rewritten;
+    }));
+
+    if (hasTimeFormula) {
+      range.setFormulas(rewrittenFormulas);
+    }
+
+    const values = range.getValues();
+    range.setValues(values);
+  }
+}
+
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
 function mergeMain() {
+  const exportStartedAt = new Date();
+
   const scriptProperties = PropertiesService.getScriptProperties();
   const PARENT_FOLDER_ID = scriptProperties.getProperty("PARENT_FOLDER_ID");
   const GOOGLE_CHAT_WEBHOOK_URL = scriptProperties.getProperty("GOOGLE_CHAT_WEBHOOK_URL");
@@ -103,20 +157,26 @@ function mergeMain() {
   const nowDocVer = configSheet.getRange("B2").getValue();
   const newDocVer = configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
 
-  // ブランチファイル(キャッシュファイル)を削除
-  deleteSheetsStartingWithBracket(spreadsheetId);
-
   // フォルダを作成
-  const folder_id = createFolderWithCurrentTimestamp(PARENT_FOLDER_ID);
+  const folder_id = createFolderWithCurrentTimestamp(PARENT_FOLDER_ID, exportStartedAt);
+
+  // エクスポート用にスプレッドシートをコピー
+  const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt);
+
+  // コピーしたスプレッドシート内の時間依存データを固定化
+  freezeSpreadsheetValues(exportSpreadsheetId, exportStartedAt);
+
+  // コピー先に残っている一時シートを削除
+  deleteSheetsStartingWithBracket(exportSpreadsheetId);
 
   // モノクロ印刷用にシートを作成
-  const mono_sheet_name = copyAndFormatSheet(spreadsheetId, sheetName);
+  const mono_sheet_name = copyAndFormatSheet(exportSpreadsheetId, sheetName, exportStartedAt);
 
   // カラー版をエクスポート
-  const color_data = exportSheetAsPdf(spreadsheetId, sheetName, folder_id, true);
+  const color_data = exportSheetAsPdf(exportSpreadsheetId, sheetName, folder_id, true, exportStartedAt);
 
   // モノクローム版をエクスポート
-  const mono_data = exportSheetAsPdf(spreadsheetId, mono_sheet_name, folder_id, false)
+  const mono_data = exportSheetAsPdf(exportSpreadsheetId, mono_sheet_name, folder_id, false, exportStartedAt)
 
   // Google Chat で送信
   const message_content = {

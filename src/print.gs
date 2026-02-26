@@ -4,9 +4,10 @@
  *
  * @param {string} spreadsheetId - 操作対象の Google Spreadsheet の ID。
  * @param {string} sheetName - コピーおよび調整対象のシート名。
+ * @param {Date=} baseTimestamp - シート名に利用する基準時刻。未指定時は現在時刻。
  * @returns {string} コピーして作成されたシートの名前。
  */
-function copyAndFormatSheet(spreadsheetId, sheetName) {
+function copyAndFormatSheet(spreadsheetId, sheetName, baseTimestamp) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const originalSheet = ss.getSheetByName(sheetName);
 
@@ -16,7 +17,7 @@ function copyAndFormatSheet(spreadsheetId, sheetName) {
 
   // 1. 指定された Google Spreadsheet ID のシートをコピーする
   // コピー後の名前は、 [print]${コピー前の名前} - ${コピー日時})
-  const now = new Date();
+  const now = baseTimestamp || new Date();
   const year = now.getFullYear();
   const month = (now.getMonth() + 1).toString().padStart(2, '0');
   const day = now.getDate().toString().padStart(2, '0');
