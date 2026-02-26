@@ -216,5 +216,5 @@ function mergeMain() {
   }
   sendGooglechat(message_content, GOOGLE_CHAT_WEBHOOK_URL);
   
-  SpreadsheetApp.getUi().alert('出版が完了しました。');
+  ss.toast('出版が完了しました。');
 }
