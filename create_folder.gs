@@ -37,13 +37,3 @@ function createFolderWithCurrentTimestamp(parentFolderId) {
     throw new Error(`フォルダの作成に失敗しました: ${e.message}`);
   }
 }
-
-function testCreateFolder() {
-  const yourParentFolderId = 'ここに親フォルダのIDを入力してください'; // 例: '1a2b3c4d5e6f7g8h9i0jklmnopqrstuvwx'
-  try {
-    const newFolderId = createFolderWithCurrentTimestamp(yourParentFolderId);
-    Logger.log(`新しいフォルダが作成されました。フォルダID: ${newFolderId}`);
-  } catch (e) {
-    Logger.log(e.message);
-  }
-}
