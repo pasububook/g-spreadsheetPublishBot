@@ -65,12 +65,13 @@ function getChangelogs(spreadsheetId, sheetName) {
 }
 
 // エクスポート用にスプレッドシートをコピー
-function createExportSpreadsheetCopy(spreadsheetId, targetFolderId, baseTimestamp) {
+function createExportSpreadsheetCopy(spreadsheetId, targetFolderId, baseTimestamp, baseName) {
   const sourceFile = DriveApp.getFileById(spreadsheetId);
   const targetFolder = DriveApp.getFolderById(targetFolderId);
   const exportTime = baseTimestamp || new Date();
   const timestamp = Utilities.formatDate(exportTime, 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
-  const copiedFile = sourceFile.makeCopy(sourceFile.getName() + ' - export-' + timestamp, targetFolder);
+  const namePrefix = (baseName || sourceFile.getName()).toString().trim() || sourceFile.getName();
+  const copiedFile = sourceFile.makeCopy(namePrefix + ' - ' + timestamp, targetFolder);
   return copiedFile.getId();
 }
 
@@ -182,7 +183,7 @@ function mergeMain() {
   const folder_id = createFolderWithCurrentTimestamp(exportParentFolderId, exportStartedAt);
 
   // エクスポート用にスプレッドシートをコピー
-  const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt);
+  const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt, sheetName);
 
   // コピーしたスプレッドシート内の時間依存データを固定化
   freezeSpreadsheetValues(exportSpreadsheetId, exportStartedAt);
