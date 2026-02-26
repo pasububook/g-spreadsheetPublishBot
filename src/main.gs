@@ -1,3 +1,7 @@
+/**
+ * スプレッドシート起動時にカスタムメニューを追加する。
+ * @return {void}
+ */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   var menu = ui.createMenu('出版');
@@ -6,7 +10,10 @@ function onOpen() {
   menu.addToUi();
 }
 
-// ユーザーに変更内容を尋ねるダイアログを表示する関数
+/**
+ * 変更内容入力用のサイドバーを表示する。
+ * @return {void}
+ */
 function showCommitRevision() {
   const html = HtmlService.createTemplateFromFile('src/html/changesInput')
       .evaluate()
@@ -15,7 +22,10 @@ function showCommitRevision() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-// 本当に Google Chat に送信してよいか確認するダイアログ
+/**
+ * Google Chat 送信前の確認ダイアログを表示する。
+ * @return {void}
+ */
 function mergeMainPermission() {
   var ui = SpreadsheetApp.getUi();
   var response = ui.alert("Google Chat に送信します", ui.ButtonSet.OK_CANCEL);
@@ -25,7 +35,11 @@ function mergeMainPermission() {
   }
 }
 
-// 変更内容の保存
+/**
+ * 変更内容を .changelog に保存する。
+ * @param {string[]} changes 変更内容配列
+ * @return {void}
+ */
 function saveCommitRevision(changes) {
   const activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const changelogSheet = activeSpreadsheet.getSheetByName('.changelog');
@@ -41,8 +55,13 @@ function saveCommitRevision(changes) {
   changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
 }
 
-// 変更内容の取得
-function getChangelogs(spreadsheetId, sheetName) {
+/**
+ * 未送信の変更内容のみを取得する。
+ * @param {string} spreadsheetId スプレッドシートID
+ * @param {string} sheetName シート名
+ * @return {Array<Array<*>>} 未送信変更内容の行配列
+ */
+function getUnmergedChangelogs(spreadsheetId, sheetName) {
   const changelogSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
   const lastRow = changelogSheet.getLastRow();
   if (lastRow <= 1) {
@@ -52,23 +71,45 @@ function getChangelogs(spreadsheetId, sheetName) {
   const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
 
   var changelog = [];
-  var rowsToMarkMerged = [];
 
   for (let i = 0; i < allChangelogs.length; i++) {
     if (allChangelogs[i][3] === false) {
       changelog.push(allChangelogs[i]);
-      rowsToMarkMerged.push(i + 2);
     }
-  }
-
-  for (let i = 0; i < rowsToMarkMerged.length; i++) {
-    changelogSheet.getRange(rowsToMarkMerged[i], 4).setValue(true);
   }
 
   return changelog;
 }
 
-// エクスポート用にスプレッドシートをコピー
+/**
+ * 未送信の変更内容行を送信済み(true)に更新する。
+ * @param {string} spreadsheetId スプレッドシートID
+ * @param {string} sheetName シート名
+ * @return {void}
+ */
+function markChangelogsAsMerged(spreadsheetId, sheetName) {
+  const changelogSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+  const lastRow = changelogSheet.getLastRow();
+  if (lastRow <= 1) {
+    return;
+  }
+
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
+  for (let i = 0; i < allChangelogs.length; i++) {
+    if (allChangelogs[i][3] === false) {
+      changelogSheet.getRange(i + 2, 4).setValue(true);
+    }
+  }
+}
+
+/**
+ * エクスポート用にスプレッドシートをコピーする。
+ * @param {string} spreadsheetId コピー元スプレッドシートID
+ * @param {string} targetFolderId コピー先フォルダID
+ * @param {Date=} baseTimestamp ファイル名に利用する日時
+ * @param {string=} baseName ファイル名プレフィックス
+ * @return {string} コピー先スプレッドシートID
+ */
 function createExportSpreadsheetCopy(spreadsheetId, targetFolderId, baseTimestamp, baseName) {
   const sourceFile = DriveApp.getFileById(spreadsheetId);
   const targetFolder = DriveApp.getFolderById(targetFolderId);
@@ -79,7 +120,12 @@ function createExportSpreadsheetCopy(spreadsheetId, targetFolderId, baseTimestam
   return copiedFile.getId();
 }
 
-// コピーしたスプレッドシート内の値を固定化 (数式を値に変換)
+/**
+ * コピー先スプレッドシートの NOW/TODAY を固定日時に置換する。
+ * @param {string} spreadsheetId 対象スプレッドシートID
+ * @param {Date=} baseTimestamp 固定日時
+ * @return {void}
+ */
 function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const sheets = ss.getSheets();
@@ -125,7 +171,12 @@ function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
   }
 }
 
-// エクスポート先の親フォルダIDを解決
+/**
+ * エクスポート先の親フォルダIDを解決する。
+ * @param {string} configuredParentFolderId 設定済み親フォルダID
+ * @param {string} spreadsheetId 元スプレッドシートID
+ * @return {string} 親フォルダID
+ */
 function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
   const trimmedFolderId = (configuredParentFolderId || '').toString().trim();
   if (trimmedFolderId) {
@@ -141,7 +192,12 @@ function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
   throw new Error('PARENT_FOLDER_ID が未設定で、コピー元スプレッドシートの親フォルダも取得できません。');
 }
 
-// エクスポート用コピーの対象シート見出しを更新
+/**
+ * エクスポート用コピーの見出し(F1)を Issue に更新する。
+ * @param {string} spreadsheetId 対象スプレッドシートID
+ * @param {string} sheetName 対象シート名
+ * @return {void}
+ */
 function replaceExportHeaderLabel(spreadsheetId, sheetName) {
   const exportSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
   const targetSheet = exportSpreadsheet.getSheetByName(sheetName);
@@ -152,7 +208,10 @@ function replaceExportHeaderLabel(spreadsheetId, sheetName) {
   targetSheet.getRange('F1').setValue('Issue');
 }
 
-// メニュー: Google Chat に送信 (変更内容の処理を含む)
+/**
+ * 変更内容を取り込み、エクスポートと Google Chat 送信を実行する。
+ * @return {void}
+ */
 function mergeMain() {
   const exportStartedAt = new Date();
 
@@ -170,7 +229,8 @@ function mergeMain() {
   Logger.log('スプレッドシートID: ' + spreadsheetId);
 
   // 変更内容の取得
-  const changelogs = getChangelogs(ss.getId(), '.changelog');
+  const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
+  markChangelogsAsMerged(ss.getId(), '.changelog');
   var changes = []
   for (let i = 0; i < changelogs.length; i++) {
     changes.push(changelogs[i][2])
