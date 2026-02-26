@@ -230,7 +230,6 @@ function mergeMain() {
 
   // 変更内容の取得
   const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
-  markChangelogsAsMerged(ss.getId(), '.changelog');
   var changes = []
   for (let i = 0; i < changelogs.length; i++) {
     changes.push(changelogs[i][2])
@@ -252,7 +251,8 @@ function mergeMain() {
   // '.config'!B2: バージョン情報が記載されたせる
   const configSheet = ss.getSheetByName(".config")
   const nowDocVer = configSheet.getRange("B2").getValue();
-  const newDocVer = configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
+  configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
+  SpreadsheetApp.flush();
 
   // フォルダを作成
   const folder_id = createFolderWithCurrentTimestamp(exportParentFolderId, exportStartedAt);
@@ -293,6 +293,9 @@ function mergeMain() {
     }
   }
   sendGooglechat(message_content, GOOGLE_CHAT_WEBHOOK_URL);
+
+  // 送信成功後に未送信ログを送信済みへ更新
+  markChangelogsAsMerged(ss.getId(), '.changelog');
   
   ss.toast('出版が完了しました。');
 }
