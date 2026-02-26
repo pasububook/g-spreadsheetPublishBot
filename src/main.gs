@@ -8,7 +8,7 @@ function onOpen() {
 
 // ユーザーに変更内容を尋ねるダイアログを表示する関数
 function showCommitRevision() {
-  const html = HtmlService.createTemplateFromFile('changesInput')
+  const html = HtmlService.createTemplateFromFile('src/html/changesInput')
       .evaluate()
       .setTitle('変更内容を記述')
       .setWidth(400); // 必要に応じて幅を調整
@@ -116,6 +116,22 @@ function freezeSpreadsheetValues(spreadsheetId, baseTimestamp) {
   }
 }
 
+// エクスポート先の親フォルダIDを解決
+function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
+  const trimmedFolderId = (configuredParentFolderId || '').toString().trim();
+  if (trimmedFolderId) {
+    return trimmedFolderId;
+  }
+
+  const sourceFile = DriveApp.getFileById(spreadsheetId);
+  const parents = sourceFile.getParents();
+  if (parents.hasNext()) {
+    return parents.next().getId();
+  }
+
+  throw new Error('PARENT_FOLDER_ID が未設定で、コピー元スプレッドシートの親フォルダも取得できません。');
+}
+
 // メニュー: Google Chat に送信 (変更内容の処理を含む)
 function mergeMain() {
   const exportStartedAt = new Date();
@@ -128,6 +144,7 @@ function mergeMain() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetName = ss.getActiveSheet().getName();
   const spreadsheetId = ss.getId();
+  const exportParentFolderId = resolveExportParentFolderId(PARENT_FOLDER_ID, spreadsheetId);
 
   Logger.log('シート名: ' + sheetName);
   Logger.log('スプレッドシートID: ' + spreadsheetId);
@@ -158,7 +175,7 @@ function mergeMain() {
   const newDocVer = configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
 
   // フォルダを作成
-  const folder_id = createFolderWithCurrentTimestamp(PARENT_FOLDER_ID, exportStartedAt);
+  const folder_id = createFolderWithCurrentTimestamp(exportParentFolderId, exportStartedAt);
 
   // エクスポート用にスプレッドシートをコピー
   const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt);

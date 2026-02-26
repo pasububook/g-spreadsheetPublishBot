@@ -24,8 +24,13 @@ function createFolderWithCurrentTimestamp(parentFolderId, baseTimestamp) {
   const folderName = `${year}${month}${day}_${hours}${minutes}`;
 
   try {
+    const targetParentFolderId = (parentFolderId || '').toString().trim();
+    if (!targetParentFolderId) {
+      throw new Error('親フォルダIDが空です。');
+    }
+
     // 親フォルダを取得
-    const parentFolder = DriveApp.getFolderById(parentFolderId);
+    const parentFolder = DriveApp.getFolderById(targetParentFolderId);
 
     // 新しいフォルダを作成
     const newFolder = parentFolder.createFolder(folderName);
