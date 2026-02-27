@@ -177,6 +177,7 @@
       line-height: 1.5;
       border-bottom: 1px solid transparent;
       word-break: break-word;
+      position: relative;
     }
     .editor:focus {
       border-bottom: 2px solid var(--primary-color);
@@ -185,6 +186,13 @@
       content: attr(placeholder);
       color: var(--placeholder-color);
       pointer-events: none;
+      display: block;
+      position: absolute;
+      top: 5px;
+      left: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* --- Inline Ghost Suggestion --- */
@@ -769,7 +777,7 @@ function addNewRow(initialHtml = "", initialSubject = "") {
   const editor = document.createElement('div');
   editor.className = 'editor';
   editor.contentEditable = true;
-  editor.placeholder = "条件を入力... (<, @ でタグ追加)";
+  editor.setAttribute('placeholder', '条件を入力... (<, @ でタグ追加)');
   editor.innerHTML = initialHtml;
   
   // Events
