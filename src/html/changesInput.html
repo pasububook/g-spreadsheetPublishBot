@@ -181,10 +181,18 @@
     .editor:focus {
       border-bottom: 2px solid var(--primary-color);
     }
-    .editor:empty::before {
+    .editor.is-empty::before {
       content: attr(placeholder);
       color: var(--placeholder-color);
       pointer-events: none;
+    }
+
+    /* --- Inline Ghost Suggestion --- */
+    .inline-ghost {
+      color: #aaaaaa;
+      pointer-events: none;
+      user-select: none;
+      font-style: normal;
     }
 
     /* Delete Button */
@@ -578,6 +586,7 @@ let suggestionTrigger = null;
 let suggestionIndex = 0;
 let filteredSuggestions = [];
 let queryStartRange = null;
+let inlineSuggestion = null; // { ghostEl, fullName, queryNode, queryStartOffset, queryEndOffset }
 
 const container = document.getElementById('list-container');
 const emptyState = document.getElementById('empty-state');
@@ -597,6 +606,119 @@ function updateEmptyState() {
     container.style.display = 'block';
     emptyState.style.display = 'none';
   }
+}
+
+// エディタのプレースホルダー表示制御
+function updateEditorEmptyState(editor) {
+  const hasTag = editor.querySelector('.tag') !== null;
+  const text = editor.innerText.replace(/\u00A0/g, ' ').trim();
+  editor.classList.toggle('is-empty', !hasTag && text === '');
+}
+
+/**
+ * インラインサジェスト処理
+ */
+function getQueryAtCursor(sel) {
+  if (!sel.rangeCount) return null;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return null;
+  if (range.startContainer.nodeType !== Node.TEXT_NODE) return null;
+
+  const text = range.startContainer.textContent;
+  const offset = range.startOffset;
+
+  let start = offset;
+  while (start > 0 && /[a-zA-Z0-9]/.test(text[start - 1])) {
+    start--;
+  }
+  if (start === offset) return null;
+
+  return {
+    query: text.substring(start, offset),
+    node: range.startContainer,
+    startOffset: start,
+    endOffset: offset
+  };
+}
+
+function showInlineSuggestion(editor, queryInfo) {
+  removeInlineSuggestion();
+  if (!queryInfo || !queryInfo.query) return;
+
+  const { query, node, startOffset, endOffset } = queryInfo;
+  const lowerQ = query.toLowerCase();
+
+  // 名前前方一致 → 優先
+  let bestMatch = SUGGEST_DB.find(item => item.name.toLowerCase().startsWith(lowerQ));
+  // キーワード前方一致
+  if (!bestMatch) {
+    bestMatch = SUGGEST_DB.find(item =>
+      item.keywords.some(k => k.toLowerCase().startsWith(lowerQ))
+    );
+  }
+  if (!bestMatch) return;
+
+  // ゴーストspan生成
+  const ghost = document.createElement('span');
+  ghost.className = 'inline-ghost';
+  ghost.contentEditable = 'false';
+  ghost.textContent = bestMatch.name;
+
+  // カーソル位置 (queryの末尾) に挿入
+  const insertRange = document.createRange();
+  insertRange.setStart(node, endOffset);
+  insertRange.collapse(true);
+  insertRange.insertNode(ghost);
+
+  // カーソルをゴーストの直前 (= queryの末尾) に戻す
+  const sel = window.getSelection();
+  const newRange = document.createRange();
+  newRange.setStart(node, endOffset);
+  newRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+
+  inlineSuggestion = {
+    ghostEl: ghost,
+    fullName: bestMatch.name,
+    queryNode: node,
+    queryStartOffset: startOffset,
+    queryEndOffset: endOffset
+  };
+}
+
+function removeInlineSuggestion() {
+  if (inlineSuggestion && inlineSuggestion.ghostEl.parentNode) {
+    inlineSuggestion.ghostEl.remove();
+  }
+  inlineSuggestion = null;
+}
+
+function acceptInlineSuggestion() {
+  if (!inlineSuggestion) return;
+
+  const { ghostEl, fullName, queryNode, queryStartOffset, queryEndOffset } = inlineSuggestion;
+
+  // ゴーストを先に削除
+  if (ghostEl.parentNode) ghostEl.remove();
+  inlineSuggestion = null;
+
+  // queryStartRange を設定して insertTag に委譲
+  const sel = window.getSelection();
+
+  // カーソルを queryEnd に移動
+  const endRange = document.createRange();
+  endRange.setStart(queryNode, queryEndOffset);
+  endRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(endRange);
+
+  // queryStartRange = クエリ開始位置
+  queryStartRange = document.createRange();
+  queryStartRange.setStart(queryNode, queryStartOffset);
+  queryStartRange.collapse(true);
+
+  insertTag(fullName);
 }
 
 /**
@@ -655,7 +777,10 @@ function addNewRow(initialHtml = "", initialSubject = "") {
   editor.addEventListener('keydown', handleEditorKeydown);
   editor.addEventListener('input', handleEditorInput);
   editor.addEventListener('blur', () => {
-    setTimeout(() => { if(!suggestionBox.matches(':hover')) closeSuggestions(); }, 200);
+    setTimeout(() => {
+      if (!suggestionBox.matches(':hover')) closeSuggestions();
+      removeInlineSuggestion();
+    }, 200);
   });
 
   // Delete Button
@@ -674,7 +799,10 @@ function addNewRow(initialHtml = "", initialSubject = "") {
   rowDiv.appendChild(delBtn);
 
   container.appendChild(rowDiv);
-  
+
+  // 初期状態でプレースホルダーを表示
+  updateEditorEmptyState(editor);
+
   updateEmptyState();
   editor.focus();
   return rowDiv;
@@ -685,23 +813,28 @@ function addNewRow(initialHtml = "", initialSubject = "") {
  */
 function handleEditorInput(e) {
   if (!activeEditor) return;
+
+  // プレースホルダーの表示を更新
+  updateEditorEmptyState(activeEditor);
+
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
   
   const text = activeEditor.innerText;
   const range = sel.getRangeAt(0);
   const startOffset = range.startOffset;
-  const container = range.startContainer;
+  const rangeContainer = range.startContainer;
   
-  if (container.nodeType === Node.TEXT_NODE) {
-    const textContent = container.textContent;
+  if (rangeContainer.nodeType === Node.TEXT_NODE) {
+    const textContent = rangeContainer.textContent;
     const charBefore = textContent[startOffset - 1];
     
     if (["<", "＜", "`", "@"].includes(charBefore)) {
+      removeInlineSuggestion();
       suggestionMode = true;
       suggestionTrigger = charBefore; 
       queryStartRange = range.cloneRange();
-      queryStartRange.setStart(container, startOffset - 1);
+      queryStartRange.setStart(rangeContainer, startOffset - 1);
       showSuggestions("");
       return;
     }
@@ -732,6 +865,17 @@ function handleEditorInput(e) {
     } else {
       closeSuggestions();
     }
+    return;
+  }
+
+  // ドロップダウンサジェストが非アクティブのとき、インラインサジェストを試みる
+  if (!suggestionMode) {
+    const queryInfo = getQueryAtCursor(sel);
+    if (queryInfo && /^[a-zA-Z0-9]+$/.test(queryInfo.query)) {
+      showInlineSuggestion(activeEditor, queryInfo);
+    } else {
+      removeInlineSuggestion();
+    }
   }
 }
 
@@ -741,12 +885,21 @@ function handleEditorKeydown(e) {
   // ショートカットキー対応: Ctrl+Enter / Cmd+Enter で保存
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
+    removeInlineSuggestion();
     document.getElementById('save-btn').click();
+    return;
+  }
+
+  // インラインサジェスト確定: Tab または右矢印キー（ドロップダウン非アクティブ時）
+  if (!suggestionMode && inlineSuggestion && (e.key === 'Tab' || e.key === 'ArrowRight')) {
+    e.preventDefault();
+    acceptInlineSuggestion();
     return;
   }
 
   if (e.key === 'Enter') {
     e.preventDefault();
+    removeInlineSuggestion();
     if (suggestionMode && filteredSuggestions.length > 0) {
       const selected = filteredSuggestions[suggestionIndex];
       insertTag(selected.name);
@@ -805,11 +958,20 @@ function handleEditorKeydown(e) {
       renderSuggestions();
     } else if (e.key === 'Escape') {
       closeSuggestions();
+      removeInlineSuggestion();
     } else if (e.key === 'Tab') {
       e.preventDefault();
       if (filteredSuggestions.length > 0) {
         insertTag(filteredSuggestions[suggestionIndex].name);
       }
+    }
+  } else {
+    // ドロップダウン非表示時: 通常の文字入力でインラインサジェストを消す
+    if (inlineSuggestion && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      removeInlineSuggestion();
+    } else if (e.key === 'Escape' && inlineSuggestion) {
+      e.preventDefault();
+      removeInlineSuggestion();
     }
   }
 }
@@ -861,6 +1023,9 @@ function insertTag(text, isAutoConfirm = false) {
       select.value = subject;
     }
   }
+
+  // エディタのプレースホルダー状態を更新
+  if (activeEditor) updateEditorEmptyState(activeEditor);
 
   closeSuggestions();
 }
@@ -1052,6 +1217,9 @@ document.getElementById('save-btn').onclick = function() {
   rowElements.forEach(row => {
     const editor = row.querySelector('.editor');
     const select = row.querySelector('.subject-select');
+
+    // 保存前にゴーストテキストを除去
+    editor.querySelectorAll('.inline-ghost').forEach(g => g.remove());
     
     if (editor.innerText.trim() !== "" || editor.querySelector('.tag')) {
       const subject = select ? select.value : "";
