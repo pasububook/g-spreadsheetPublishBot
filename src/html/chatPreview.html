@@ -47,6 +47,8 @@
       border-bottom: 1px solid var(--border-color);
       background-color: #fff;
       flex-shrink: 0;
+      position: sticky;
+      top: 0;
       z-index: 10;
     }
 
@@ -221,6 +223,8 @@
       justify-content: flex-end;
       gap: 12px;
       flex-shrink: 0;
+      position: sticky;
+      bottom: 0;
       z-index: 10;
     }
 
@@ -338,7 +342,7 @@
 
     <!-- フッター -->
     <div class="modal-footer">
-      <button class="btn btn-secondary">キャンセル</button>
+      <button class="btn btn-secondary" id="btn-cancel">キャンセル</button>
       <button class="btn btn-primary" id="btn-submit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -379,8 +383,28 @@
         });
       });
 
-      document.getElementById('btn-submit').addEventListener('click', () => {
-        showToast('Google Chat への送信リクエストを受け付けました。');
+      // キャンセルボタン: モーダルを閉じる
+      document.getElementById('btn-cancel').addEventListener('click', () => {
+        google.script.host.close();
+      });
+
+      // 送信実行
+      function submitToChat() {
+        const btnSubmit = document.getElementById('btn-submit');
+        btnSubmit.disabled = true;
+        google.script.run.mergeMain();
+        google.script.host.close();
+      }
+
+      // 送信ボタン
+      document.getElementById('btn-submit').addEventListener('click', submitToChat);
+
+      // Ctrl + Enter で送信
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+          e.preventDefault();
+          submitToChat();
+        }
       });
 
       function showToast(message) {

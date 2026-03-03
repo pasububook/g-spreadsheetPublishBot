@@ -27,12 +27,11 @@ function showCommitRevision() {
  * @return {void}
  */
 function mergeMainPermission() {
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.alert("Google Chat に送信します", ui.ButtonSet.OK_CANCEL);
-
-  if (response == "OK") {
-    mergeMain();
-  }
+  const html = HtmlService.createTemplateFromFile('src/html/chatPreview')
+      .evaluate()
+      .setWidth(960)
+      .setHeight(640);
+  SpreadsheetApp.getUi().showModalDialog(html, '送信内容の確認');
 }
 
 /**
