@@ -30,8 +30,8 @@ function setMainSheet(){
 
     // 値の保存
     const headerValues = [
-      ["='.config'!B1", "", "", "", "", "Edit", "", ""],
-      ["", "", "", "", "", "Ver.", "='.config'!B2", ""],
+      ["='.config'!B1", "", "", "", "", "='.config'!B2", "", ""],
+      ["", "", "", "", "", "Ver.", "='.config'!B3", ""],
       ["", "", "", "", "=NOW()", "", "", "版"]
     ]
     mainSheet.getRange("A1:H3").setValues(headerValues);
@@ -181,7 +181,7 @@ function setMainSheet(){
 // .config
 function setConfigSheet(){
   const configSheet = createNameSheet(".config");
-  configSheet.getRange("A1:B2").setValues([["title", docTitle], ["version", "0"]])
+  configSheet.getRange("A1:B3").setValues([["title", docTitle], ["type", "Edit"], ["version", "0"]])
 
   configSheet.hideSheet();
 }

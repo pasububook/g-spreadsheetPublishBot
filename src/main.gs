@@ -219,12 +219,12 @@ function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
  */
 function replaceExportHeaderLabel(spreadsheetId, sheetName) {
   const exportSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  const targetSheet = exportSpreadsheet.getSheetByName(sheetName);
+  const targetSheet = exportSpreadsheet.getSheetByName(".config");
   if (!targetSheet) {
     throw new Error('対象シートが見つかりません: ' + sheetName);
   }
 
-  targetSheet.getRange('F1').setValue('Issue');
+  targetSheet.getRange('B2').setValue('Issue');
 }
 
 /**
@@ -267,10 +267,10 @@ function mergeMain() {
   const publisherName = editors.find(row => row[0] === publisherEmail)[1];
 
   // バージョン表記の更新
-  // '.config'!B2: バージョン情報が記載されたせる
+  // '.config'!B3: バージョン情報が記載されたセル
   const configSheet = ss.getSheetByName(".config")
-  const nowDocVer = configSheet.getRange("B2").getValue();
-  configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
+  const nowDocVer = configSheet.getRange("B3").getValue();
+  configSheet.getRange("B3").setValue(Number(nowDocVer) + 1);
   SpreadsheetApp.flush();
 
   // フォルダを作成
