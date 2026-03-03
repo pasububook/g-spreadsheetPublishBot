@@ -131,6 +131,11 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      background: #fff;
+    }
+
+    .pdf-container.pdf-loaded {
+      background: #525659;
     }
 
     #pdf-canvas-wrapper {
@@ -663,6 +668,7 @@
             }
             chain.then(function() {
               wrapper.classList.add('visible');
+              wrapper.closest('.pdf-container').classList.add('pdf-loaded');
             });
 
           }).catch(function(err) {
