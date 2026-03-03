@@ -50,6 +50,7 @@ function getUnmergedChangelogsForPreview() {
 
 /**
  * 現在のアクティブシートを PDF としてエクスポートし、base64 文字列で返す。
+ * 同時に Drive の ${PARENT_FOLDER_ID}/preview/yyyyMMdd_HHmmss.pdf へ保存する。
  * HTML 側で PDF.js に渡し、キャンバスに直接描画する。
  * @return {string} base64 エンコードされた PDF
  */
@@ -80,7 +81,18 @@ function createPreviewPdf() {
     throw new Error('PDF 生成に失敗しました。ステータス: ' + response.getResponseCode());
   }
 
-  return Utilities.base64Encode(response.getContent());
+  const pdfContent = response.getContent();
+
+  // Drive の ${PARENT_FOLDER_ID}/preview/ へ保存
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const PARENT_FOLDER_ID = scriptProperties.getProperty('PARENT_FOLDER_ID');
+  const exportParentFolderId = resolveExportParentFolderId(PARENT_FOLDER_ID, ss.getId());
+  const previewFolderId = getOrCreateSubFolder(exportParentFolderId, 'preview');
+  const timestamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+  const previewFolder = DriveApp.getFolderById(previewFolderId);
+  previewFolder.createFile(Utilities.newBlob(pdfContent, 'application/pdf', timestamp + '.pdf'));
+
+  return Utilities.base64Encode(pdfContent);
 }
 
 /**
