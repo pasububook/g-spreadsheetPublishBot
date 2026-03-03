@@ -23,6 +23,9 @@ function renderTagsForChat(text) {
   });
 }
 
+/** 教科の表示順 */
+const SUBJECT_SORT_ORDER = ["国語", "数学", "理科", "社会", "英語"];
+
 /**
  * Google Chat にメッセージを送信
  *
@@ -31,18 +34,48 @@ function renderTagsForChat(text) {
  * @param {string} webhookUrl - Webhook の URL。
  */
 function sendGooglechat(messageContents, webhookUrl) {
-  // changes を教科ごとにグループ化 (登録順を保持)
-  const subjectOrder = [];
+  // changes を教科ごとにグループ化
   const subjectMap = {};
   for (let i = 0; i < messageContents.changes.length; i++) {
-    const subject = (messageContents.changes[i][0] || '').toString().trim() || 'その他';
+    const rawSubject = (messageContents.changes[i][0] || '').toString().trim();
+    // "国語/現代文α" → "国語" のように大カテゴリを抽出して順序判定に使う
+    const majorSubject = rawSubject.split('/')[0].trim() || 'その他';
+    const subject = rawSubject || 'その他';
     const message = (messageContents.changes[i][1] || '').toString();
     if (!subjectMap[subject]) {
-      subjectMap[subject] = [];
-      subjectOrder.push(subject);
+      subjectMap[subject] = { major: majorSubject, messages: [] };
     }
-    subjectMap[subject].push(message);
+    subjectMap[subject].messages.push(message);
   }
+
+  // 教科を定義順で並び替え (未定義の教科はその他として末尾)
+  const sortedSubjects = Object.keys(subjectMap).sort(function(a, b) {
+    const ia = SUBJECT_SORT_ORDER.indexOf(subjectMap[a].major);
+    const ib = SUBJECT_SORT_ORDER.indexOf(subjectMap[b].major);
+    const ra = ia === -1 ? SUBJECT_SORT_ORDER.length : ia;
+    const rb = ib === -1 ? SUBJECT_SORT_ORDER.length : ib;
+    if (ra !== rb) return ra - rb;
+    // 同じ大カテゴリ内ではサブジェクト名でソート
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+
+  // 変更内容を1つの textParagraph にまとめる
+  // 教科名を太字、各項目を • 箇条書きで結合
+  const changeLines = [];
+  sortedSubjects.forEach(function(subject) {
+    changeLines.push("<b>" + subject + "</b>");
+    subjectMap[subject].messages.forEach(function(msg) {
+      changeLines.push("• " + renderTagsForChat(msg));
+    });
+  });
+
+  const changeWidgets = [
+    {
+      "textParagraph": {
+        "text": changeLines.join("<br>")
+      }
+    }
+  ];
 
   // 送信するテキストメッセージ
   const textMessage = "「" + messageContents.sheetName + "」が更新されました。";
@@ -58,22 +91,6 @@ function sendGooglechat(messageContents, webhookUrl) {
   } else {
     contributorMessage = messageContents.publisher.name + "によって出版";
   }
-
-  // 教科ごとのセクションを生成
-  const changeSections = subjectOrder.map(function(subject) {
-    const widgets = subjectMap[subject].map(function(msg) {
-      return {
-        "decoratedText": {
-          "text": renderTagsForChat(msg)
-        }
-      };
-    });
-    return {
-      "header": "<b>" + subject + "</b>",
-      "collapsible": false,
-      "widgets": widgets
-    };
-  });
 
   // 入手セクション
   const downloadSection = {
@@ -124,7 +141,14 @@ function sendGooglechat(messageContents, webhookUrl) {
       "title": messageContents.sheetName,
       "subtitle": contributorMessage
     },
-    "sections": changeSections.concat([downloadSection])
+    "sections": [
+      {
+        "header": "変更内容",
+        "collapsible": false,
+        "widgets": changeWidgets
+      },
+      downloadSection
+    ]
   };
 
   const options = {
