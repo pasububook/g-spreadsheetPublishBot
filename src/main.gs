@@ -290,6 +290,8 @@ function mergeMain() {
 
   // 現在開かれているスプレッドシートのシート名とスプレッドシートIDを取得
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  ss.toast('Google Chat への送信処理を開始しました…', '送信中', 10);
   const sheetName = ss.getActiveSheet().getName();
   const spreadsheetId = ss.getId();
   const exportParentFolderId = resolveExportParentFolderId(PARENT_FOLDER_ID, spreadsheetId);
