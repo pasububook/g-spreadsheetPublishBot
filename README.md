@@ -56,6 +56,6 @@ ${PARENT_FOLDER_ID}/
 
 ## ライセンス
 
-本プロジェクトは [MIT License](LICENSE.md) のもとで公開されています。
+本プロジェクトは [MIT License](LICENSE) のもとで公開されています。
 
 本プロジェクトが使用するサードパーティライブラリのライセンスについては [LICENSES.md](LICENSES.md) を参照してください。
