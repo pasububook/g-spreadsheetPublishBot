@@ -27,11 +27,60 @@ function showCommitRevision() {
  * @return {void}
  */
 function mergeMainPermission() {
-  const html = HtmlService.createTemplateFromFile('src/html/chatPreview')
-      .evaluate()
+  const html = HtmlService.createHtmlOutputFromFile('src/html/chatPreview')
       .setWidth(960)
       .setHeight(640);
   SpreadsheetApp.getUi().showModalDialog(html, '送信内容の確認');
+}
+
+/**
+ * モーダルから非同期で呼び出し、未送信の変更内容を返す。
+ * @return {Array<{subject: string, message: string}>}
+ */
+function getUnmergedChangelogsForPreview() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
+  return changelogs.map(function(row) {
+    return {
+      subject: (row[2] || '').toString(),
+      message: (row[3] || '').toString()
+    };
+  });
+}
+
+/**
+ * 現在のアクティブシートを PDF としてエクスポートし、base64 文字列で返す。
+ * HTML 側で PDF.js に渡し、キャンバスに直接描画する。
+ * @return {string} base64 エンコードされた PDF
+ */
+function createPreviewPdf() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  const url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=pdf'
+    + '&gid=' + sheet.getSheetId()
+    + '&size=A4'
+    + '&portrait=true'
+    + '&fitw=true'
+    + '&top_margin=0.75'
+    + '&bottom_margin=0.75'
+    + '&left_margin=0.75'
+    + '&right_margin=0.75'
+    + '&printtitle=true'
+    + '&pagenum=CENTER'
+    + '&gridlines=false';
+
+  const token = ScriptApp.getOAuthToken();
+  const response = UrlFetchApp.fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + token },
+    muteHttpExceptions: true
+  });
+
+  if (response.getResponseCode() !== 200) {
+    throw new Error('PDF 生成に失敗しました。ステータス: ' + response.getResponseCode());
+  }
+
+  return Utilities.base64Encode(response.getContent());
 }
 
 /**
@@ -86,12 +135,13 @@ function getUnmergedChangelogs(spreadsheetId, sheetName) {
     return [];
   }
 
-  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, Math.max(5, changelogSheet.getLastColumn())).getValues();
 
   var changelog = [];
 
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][4] === false) {
+    const isMerged = allChangelogs[i][4];
+    if (isMerged !== true && isMerged !== 'TRUE') {
       changelog.push(allChangelogs[i]);
     }
   }
@@ -112,9 +162,10 @@ function markChangelogsAsMerged(spreadsheetId, sheetName) {
     return;
   }
 
-  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, Math.max(5, changelogSheet.getLastColumn())).getValues();
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][4] === false) {
+    const isMerged = allChangelogs[i][4];
+    if (isMerged !== true && isMerged !== 'TRUE') {
       changelogSheet.getRange(i + 2, 5).setValue(true);
     }
   }

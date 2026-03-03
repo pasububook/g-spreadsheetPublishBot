@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google Chat 送信プレビュー</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
       --primary-color: #4285f4;
@@ -15,6 +16,10 @@
 
     *, *::before, *::after {
       box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     html, body {
@@ -116,17 +121,97 @@
       padding: 24px;
     }
 
-    .iframe-container {
+    /* ------------------------------
+       PDF プレビューエリア
+       ------------------------------ */
+    .pdf-container {
       width: 100%;
       height: 100%;
+      position: relative;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
 
-    .iframe-container iframe {
-      width: 100%;
+    #pdf-canvas-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      background: #525659;
+      min-height: 100%;
+    }
+
+    #pdf-canvas-wrapper.visible {
+      display: flex;
+    }
+
+    #pdf-canvas-wrapper canvas {
+      display: block;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      max-width: 100%;
+    }
+
+    .pdf-status {
       flex: 1;
-      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px;
+      color: #5f6368;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    /* .hidden で統一管理するため個別定義は削除 */
+
+    .pdf-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #dadce0;
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .pdf-error-icon {
+      font-size: 36px;
+      color: #ea4335;
+    }
+
+    .pdf-status p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .pdf-status small {
+      color: #9aa0a6;
+      font-size: 12px;
+    }
+
+    .btn-retry {
+      margin-top: 8px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--primary-color);
+      font-family: inherit;
+      transition: background-color 0.2s;
+    }
+
+    .btn-retry:hover {
+      background-color: var(--hover-bg);
     }
 
     /* ------------------------------
@@ -175,6 +260,39 @@
     }
 
     /* ------------------------------
+       変更内容ローディング
+       ------------------------------ */
+    .changes-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      color: #5f6368;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+
+    .changes-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #dadce0;
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .changes-error {
+      padding: 12px 16px;
+      color: #ea4335;
+      font-size: 14px;
+      border: 1px solid #fad2cf;
+      border-radius: 4px;
+      background-color: #fef7f6;
+    }
+
+    /* ------------------------------
        変更内容リスト
        ------------------------------ */
     .changes-list {
@@ -210,6 +328,14 @@
       display: block;
       color: var(--text-color);
       word-break: break-word;
+    }
+
+    .changes-empty {
+      padding: 16px;
+      color: #9aa0a6;
+      font-size: 14px;
+      font-style: italic;
+      text-align: center;
     }
 
     /* ------------------------------
@@ -260,6 +386,11 @@
       background-color: #3367d6;
     }
 
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .btn-primary svg {
       width: 16px;
       height: 16px;
@@ -301,7 +432,7 @@
     <!-- ボディ -->
     <div class="modal-body">
 
-      <!-- 左パネル: 編集内容 -->
+      <!-- 左パネル: 変更内容 -->
       <div class="panel panel-left" id="panel-left">
         <div class="left-content-wrapper">
 
@@ -313,16 +444,17 @@
 
               <div class="form-group">
                 <label class="form-label">変更内容 (取得済み)</label>
-                <ul class="changes-list">
-                  <li class="change-item">
-                    <span class="change-item-subject">数学/理数数学1</span>
-                    <span class="change-item-desc">軽微な編集</span>
-                  </li>
-                  <li class="change-item">
-                    <span class="change-item-subject">英語/論理・表現II</span>
-                    <span class="change-item-desc">マテリアルアイコンを追加</span>
-                  </li>
-                </ul>
+                <!-- ローディング中 -->
+                <div class="changes-loading" id="changes-loading">
+                  <div class="changes-spinner"></div>
+                  <span>変更内容を取得しています…</span>
+                </div>
+                <!-- エラー -->
+                <div class="changes-error hidden" id="changes-error">
+                  変更内容を取得できませんでした。
+                </div>
+                <!-- リスト (ロード後に表示) -->
+                <ul class="changes-list hidden" id="changes-list"></ul>
               </div>
 
             </div>
@@ -331,10 +463,22 @@
         </div>
       </div>
 
-      <!-- 右パネル: プレビュー -->
+      <!-- 右パネル: PDF プレビュー -->
       <div class="panel panel-right" id="panel-right">
-        <div class="iframe-container">
-          <iframe src="https://drive.google.com/file/d/1bYs55YAxEH4ZLnWJ2Gruv5PkSD9o_01u/preview"></iframe>
+        <div class="pdf-container">
+          <!-- 読み込み中表示 -->
+          <div class="pdf-status" id="pdf-status-loading">
+            <div class="pdf-spinner"></div>
+            <p>PDF プレビューを生成しています…<br><small>送信ボタンはいつでも使用できます。</small></p>
+          </div>
+          <!-- エラー表示 -->
+          <div class="pdf-status hidden" id="pdf-status-error">
+            <span class="pdf-error-icon">⚠</span>
+            <p>プレビューを読み込めませんでした。<br><small>送信は引き続き実行できます。</small></p>
+            <button class="btn-retry" id="btn-retry">再試行</button>
+          </div>
+          <!-- PDF.js キャンバスレンダリングエリア -->
+          <div id="pdf-canvas-wrapper"></div>
         </div>
       </div>
 
@@ -355,18 +499,20 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const btns = document.querySelectorAll('.view-btn');
-      const panelLeft = document.getElementById('panel-left');
-      const panelRight = document.getElementById('panel-right');
+    document.addEventListener('DOMContentLoaded', function() {
+      // ---- 変更内容の非同期取得 ----
+      loadChangesList();
 
-      btns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          btns.forEach(b => b.classList.remove('active'));
+      // ---- パネル切り替え ----
+      var btns = document.querySelectorAll('.view-btn');
+      var panelLeft = document.getElementById('panel-left');
+      var panelRight = document.getElementById('panel-right');
+
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          btns.forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
-
-          const viewMode = btn.dataset.view;
-
+          var viewMode = btn.dataset.view;
           if (viewMode === 'split') {
             panelLeft.style.width = '50%';
             panelRight.style.width = '50%';
@@ -383,62 +529,155 @@
         });
       });
 
-      // キャンセルボタン: モーダルを閉じる
-      document.getElementById('btn-cancel').addEventListener('click', () => {
+      // ---- キャンセルボタン ----
+      document.getElementById('btn-cancel').addEventListener('click', function() {
         google.script.host.close();
       });
 
-      // 送信実行
+      // ---- 送信処理 ----
       function submitToChat() {
-        const btnSubmit = document.getElementById('btn-submit');
+        var btnSubmit = document.getElementById('btn-submit');
         btnSubmit.disabled = true;
         google.script.run.mergeMain();
         google.script.host.close();
       }
 
-      // 送信ボタン
       document.getElementById('btn-submit').addEventListener('click', submitToChat);
 
-      // Ctrl + Enter で送信
-      document.addEventListener('keydown', (e) => {
+      document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
           e.preventDefault();
           submitToChat();
         }
       });
 
-      function showToast(message) {
-        const toast = document.createElement('div');
-        toast.textContent = message;
-        toast.style.cssText = [
-          'position: fixed',
-          'bottom: 30px',
-          'left: 50%',
-          'transform: translateX(-50%)',
-          'background-color: #323232',
-          'color: #fff',
-          'padding: 14px 24px',
-          'border-radius: 8px',
-          'font-size: 14px',
-          'font-family: inherit',
-          'box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14)',
-          'z-index: 10000',
-          'opacity: 0',
-          'transition: opacity 0.3s ease',
-        ].join(';');
+      // ---- PDF 遅延読み込み ----
+      loadPreviewPdf();
 
-        document.body.appendChild(toast);
-
-        requestAnimationFrame(() => {
-          toast.style.opacity = '1';
-        });
-
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-        }, 3000);
-      }
+      document.getElementById('btn-retry').addEventListener('click', function() {
+        document.getElementById('pdf-status-error').classList.add('hidden');
+        document.getElementById('pdf-status-loading').classList.remove('hidden');
+        document.getElementById('pdf-canvas-wrapper').classList.remove('visible');
+        document.getElementById('pdf-canvas-wrapper').innerHTML = '';
+        loadPreviewPdf();
+      });
     });
+
+    /**
+     * GAS の getUnmergedChangelogsForPreview を非同期呼び出しし、変更内容リストを描画する。
+     */
+    function loadChangesList() {
+      google.script.run
+        .withSuccessHandler(function(changes) {
+          document.getElementById('changes-loading').classList.add('hidden');
+          renderChangesList(changes);
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('changes-loading').classList.add('hidden');
+          document.getElementById('changes-error').classList.remove('hidden');
+          console.error('変更内容取得エラー:', err);
+        })
+        .getUnmergedChangelogsForPreview();
+    }
+
+    /**
+     * 変更内容リストを DOM に描画する。
+     * @param {Array<{subject: string, message: string}>} changes
+     */
+    function renderChangesList(changes) {
+      var list = document.getElementById('changes-list');
+      list.innerHTML = '';
+      list.classList.remove('hidden');
+
+      if (!changes || changes.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'changes-empty';
+        empty.textContent = '未送信の変更内容がありません。';
+        list.appendChild(empty);
+        return;
+      }
+
+      changes.forEach(function(item) {
+        var li = document.createElement('li');
+        li.className = 'change-item';
+
+        if (item.subject) {
+          var subject = document.createElement('span');
+          subject.className = 'change-item-subject';
+          subject.textContent = item.subject;
+          li.appendChild(subject);
+        }
+
+        var desc = document.createElement('span');
+        desc.className = 'change-item-desc';
+        desc.textContent = item.message;
+        li.appendChild(desc);
+
+        list.appendChild(li);
+      });
+    }
+
+    /**
+     * GAS の createPreviewPdf を非同期呼び出しし、PDF iframe を遅延読み込みする。
+     */
+    /**
+     * GAS の createPreviewPdf を非同期呼び出しし、PDF.js でキャンバスに描画する。
+     */
+    function loadPreviewPdf() {
+      // PDF.js worker を CDN から指定
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      google.script.run
+        .withSuccessHandler(function(base64Data) {
+          // base64 → Uint8Array
+          var binary = atob(base64Data);
+          var bytes = new Uint8Array(binary.length);
+          for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+
+          pdfjsLib.getDocument({ data: bytes }).promise.then(function(pdfDoc) {
+            document.getElementById('pdf-status-loading').classList.add('hidden');
+            var wrapper = document.getElementById('pdf-canvas-wrapper');
+            wrapper.innerHTML = '';
+
+            var renderPage = function(pageNum) {
+              return pdfDoc.getPage(pageNum).then(function(page) {
+                var viewport = page.getViewport({ scale: 1.5 });
+                var canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                wrapper.appendChild(canvas);
+                return page.render({
+                  canvasContext: canvas.getContext('2d'),
+                  viewport: viewport
+                }).promise;
+              });
+            };
+
+            // 全ページを順にレンダリング
+            var chain = Promise.resolve();
+            for (var p = 1; p <= pdfDoc.numPages; p++) {
+              chain = chain.then(renderPage.bind(null, p));
+            }
+            chain.then(function() {
+              wrapper.classList.add('visible');
+            });
+
+          }).catch(function(err) {
+            document.getElementById('pdf-status-loading').classList.add('hidden');
+            document.getElementById('pdf-status-error').classList.remove('hidden');
+            console.error('PDF レンダリングエラー:', err);
+          });
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('pdf-status-loading').classList.add('hidden');
+          document.getElementById('pdf-status-error').classList.remove('hidden');
+          console.error('PDF 生成エラー:', err);
+        })
+        .createPreviewPdf();
+    }
   </script>
 </body>
 </html>
