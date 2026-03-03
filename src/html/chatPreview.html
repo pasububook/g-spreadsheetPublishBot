@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google Chat 送信プレビュー</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
@@ -76,6 +77,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 20px;
+      line-height: 1;
     }
 
     .view-btn:hover {
@@ -101,9 +104,67 @@
 
     .panel {
       height: 100%;
+      position: relative;
+      overflow: hidden;
       transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      flex-shrink: 0;
+    }
+
+    .panel-scroll {
+      height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
+    }
+
+    /* スクロール可能インジケーター */
+    .scroll-fade {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 6px;
+      transition: opacity 0.25s;
+    }
+    .scroll-fade.hidden {
+      opacity: 0;
+    }
+    .scroll-fade-left {
+      background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.97) 100%);
+    }
+    .scroll-fade-right {
+      background: linear-gradient(to bottom, rgba(82,86,89,0) 0%, rgba(82,86,89,0.97) 100%);
+    }
+    .scroll-fade-right-white {
+      background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.97) 100%);
+    }
+    .scroll-chevron {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      box-shadow: 0 2px 6px rgba(66,133,244,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: bounce-down 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .scroll-chevron .material-symbols-outlined {
+      font-size: 18px;
+      color: #fff;
+      line-height: 1;
+    }
+    .scroll-fade-right .scroll-chevron {
+      /* 両パネルとも同じ青丸で統一 */
+    }
+    @keyframes bounce-down {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(4px); }
     }
 
     .panel-left {
@@ -189,6 +250,7 @@
     .pdf-error-icon {
       font-size: 36px;
       color: #ea4335;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
     }
 
     .pdf-status p {
@@ -213,6 +275,9 @@
       color: var(--primary-color);
       font-family: inherit;
       transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .btn-retry:hover {
@@ -309,30 +374,39 @@
       overflow: hidden;
     }
 
-    .change-item {
-      padding: 10px 16px;
+    .change-group {
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border-color);
       background-color: #fff;
-      font-size: 14px;
-      line-height: 1.5;
     }
 
-    .change-item:last-child {
+    .change-group:last-child {
       border-bottom: none;
     }
 
-    .change-item-subject {
+    .change-group-subject {
       display: block;
-      font-weight: 500;
-      color: #1a73e8;
-      margin-bottom: 2px;
-      word-break: break-word;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-color);
+      margin-bottom: 6px;
     }
 
-    .change-item-desc {
-      display: block;
+    .change-group-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .change-group-item {
+      font-size: 13px;
+      line-height: 1.5;
       color: var(--text-color);
       word-break: break-word;
+      padding-left: 4px;
     }
 
     .changes-empty {
@@ -396,9 +470,11 @@
       cursor: not-allowed;
     }
 
-    .btn-primary svg {
-      width: 16px;
-      height: 16px;
+    .material-symbols-outlined {
+      font-size: 20px;
+      line-height: 1;
+      vertical-align: middle;
+      user-select: none;
     }
   </style>
 </head>
@@ -410,26 +486,13 @@
     <div class="modal-header">
       <div class="view-controls">
         <button class="view-btn" data-view="left" title="編集のみ表示">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <path d="M12 3v18"></path>
-            <path d="M3 5c0-1.1.9-2 2-2h7v18H5c-1.1 0-2-.9-2-2V5z" fill="currentColor" opacity="0.4" stroke="none"></path>
-          </svg>
+          <span class="material-symbols-outlined">dock_to_left</span>
         </button>
         <button class="view-btn active" data-view="split" title="分割表示">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <path d="M12 3v18"></path>
-            <path d="M3 5c0-1.1.9-2 2-2h7v18H5c-1.1 0-2-.9-2-2V5z" fill="currentColor" opacity="0.4" stroke="none"></path>
-            <path d="M12 3h7c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2h-7V3z" fill="currentColor" opacity="0.4" stroke="none"></path>
-          </svg>
+          <span class="material-symbols-outlined">vertical_split</span>
         </button>
         <button class="view-btn" data-view="right" title="プレビューのみ表示">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <path d="M12 3v18"></path>
-            <path d="M12 3h7c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2h-7V3z" fill="currentColor" opacity="0.4" stroke="none"></path>
-          </svg>
+          <span class="material-symbols-outlined">dock_to_right</span>
         </button>
       </div>
     </div>
@@ -439,51 +502,64 @@
 
       <!-- 左パネル: 変更内容 -->
       <div class="panel panel-left" id="panel-left">
-        <div class="left-content-wrapper">
+        <div class="panel-scroll" id="panel-left-scroll">
+          <div class="left-content-wrapper">
 
-          <div class="edit-card">
-            <div class="card-header">
-              <h3 class="card-title">Google Chat 送信内容</h3>
-            </div>
-            <div class="card-body">
-
-              <div class="form-group">
-                <label class="form-label">変更内容 (取得済み)</label>
-                <!-- ローディング中 -->
-                <div class="changes-loading" id="changes-loading">
-                  <div class="changes-spinner"></div>
-                  <span>変更内容を取得しています…</span>
-                </div>
-                <!-- エラー -->
-                <div class="changes-error hidden" id="changes-error">
-                  変更内容を取得できませんでした。
-                </div>
-                <!-- リスト (ロード後に表示) -->
-                <ul class="changes-list hidden" id="changes-list"></ul>
+            <div class="edit-card">
+              <div class="card-header">
+                <h3 class="card-title">Google Chat 送信内容</h3>
               </div>
+              <div class="card-body">
 
+                <div class="form-group">
+                  <label class="form-label">変更内容 (取得済み)</label>
+                  <!-- ローディング中 -->
+                  <div class="changes-loading" id="changes-loading">
+                    <div class="changes-spinner"></div>
+                    <span>変更内容を取得しています…</span>
+                  </div>
+                  <!-- エラー -->
+                  <div class="changes-error hidden" id="changes-error">
+                    変更内容を取得できませんでした。
+                  </div>
+                  <!-- リスト (ロード後に表示) -->
+                  <ul class="changes-list hidden" id="changes-list"></ul>
+                </div>
+
+              </div>
             </div>
-          </div>
 
+          </div>
+        </div>
+        <div class="scroll-fade scroll-fade-left hidden" id="scroll-fade-left">
+          <div class="scroll-chevron"><span class="material-symbols-outlined">expand_more</span></div>
         </div>
       </div>
 
       <!-- 右パネル: PDF プレビュー -->
       <div class="panel panel-right" id="panel-right">
-        <div class="pdf-container">
-          <!-- 読み込み中表示 -->
-          <div class="pdf-status" id="pdf-status-loading">
-            <div class="pdf-spinner"></div>
-            <p>PDF プレビューを生成しています…<br><small>送信ボタンはいつでも使用できます。</small></p>
+        <div class="panel-scroll" id="panel-right-scroll">
+          <div class="pdf-container">
+            <!-- 読み込み中表示 -->
+            <div class="pdf-status" id="pdf-status-loading">
+              <div class="pdf-spinner"></div>
+              <p>PDF プレビューを生成しています…<br><small>送信ボタンはいつでも使用できます。</small></p>
+            </div>
+            <!-- エラー表示 -->
+            <div class="pdf-status hidden" id="pdf-status-error">
+              <span class="material-symbols-outlined pdf-error-icon">warning</span>
+              <p>プレビューを読み込めませんでした。<br><small>送信は引き続き実行できます。</small></p>
+              <button class="btn-retry" id="btn-retry">
+                <span class="material-symbols-outlined" style="font-size:16px">refresh</span>
+                再試行
+              </button>
+            </div>
+            <!-- PDF.js キャンバスレンダリングエリア -->
+            <div id="pdf-canvas-wrapper"></div>
           </div>
-          <!-- エラー表示 -->
-          <div class="pdf-status hidden" id="pdf-status-error">
-            <span class="pdf-error-icon">⚠</span>
-            <p>プレビューを読み込めませんでした。<br><small>送信は引き続き実行できます。</small></p>
-            <button class="btn-retry" id="btn-retry">再試行</button>
-          </div>
-          <!-- PDF.js キャンバスレンダリングエリア -->
-          <div id="pdf-canvas-wrapper"></div>
+        </div>
+        <div class="scroll-fade scroll-fade-right-white hidden" id="scroll-fade-right">
+          <div class="scroll-chevron"><span class="material-symbols-outlined">expand_more</span></div>
         </div>
       </div>
 
@@ -493,10 +569,7 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" id="btn-cancel">キャンセル</button>
       <button class="btn btn-primary" id="btn-submit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
+        <span class="material-symbols-outlined">send</span>
         Google Chat に送信
       </button>
     </div>
@@ -533,6 +606,39 @@
           }
         });
       });
+
+      // ---- スクロールインジケーター ----
+      function setupScrollFade(scrollElId, fadeElId) {
+        var scrollEl = document.getElementById(scrollElId);
+        var fadeEl = document.getElementById(fadeElId);
+        function update() {
+          var atBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 4;
+          if (atBottom) {
+            fadeEl.classList.add('hidden');
+          } else {
+            fadeEl.classList.remove('hidden');
+          }
+        }
+        scrollEl.addEventListener('scroll', update);
+        // コンテンツ変化時にも再チェック
+        new MutationObserver(update).observe(scrollEl, { childList: true, subtree: true });
+        update();
+      }
+      setupScrollFade('panel-left-scroll', 'scroll-fade-left');
+      setupScrollFade('panel-right-scroll', 'scroll-fade-right');
+
+      // PDF ロード後は背景が暗くなるのでフェード色を切り替え
+      var rightFade = document.getElementById('scroll-fade-right');
+      var observer = new MutationObserver(function() {
+        var container = document.querySelector('.pdf-container');
+        if (container && container.classList.contains('pdf-loaded')) {
+          rightFade.classList.remove('scroll-fade-right-white');
+          rightFade.classList.add('scroll-fade-right');
+        }
+      });
+      var pdfContainer = document.querySelector('.pdf-container');
+      if (pdfContainer) observer.observe(pdfContainer, { attributes: true, attributeFilter: ['class'] });
+
 
       // ---- キャンセルボタン ----
       document.getElementById('btn-cancel').addEventListener('click', function() {
@@ -585,8 +691,34 @@
         .getUnmergedChangelogsForPreview();
     }
 
+    /** タグカテゴリのカラー定義 (notice.gs / changesInput.html と同一) */
+    var TAG_CATEGORIES_PREVIEW = {
+      '教科書': { color: '#2E86C1' },
+      '資料集': { color: '#27AE60' },
+      'ワーク':  { color: '#E67E22' },
+      'プリント': { color: '#884EA0' },
+      'その他':  { color: '#7F8C8D' }
+    };
+
+    /** 教科の表示順 (notice.gs と同一) */
+    var SUBJECT_SORT_ORDER_PREVIEW = ['国語', '数学', '理科', '社会', '英語'];
+
+    /**
+     * <name;type> 形式のタグを <span style="color:...">name</span> に変換する。
+     * @param {string} text
+     * @return {string}
+     */
+    function renderTagsForPreview(text) {
+      return text.replace(/<([^;>]+);([^>]*)>/g, function(match, name, type) {
+        var trimmedType = type.trim();
+        var cat = TAG_CATEGORIES_PREVIEW[trimmedType] || TAG_CATEGORIES_PREVIEW['その他'];
+        return '「<span style="color:' + cat.color + ';font-weight:500">' + name + '</span>」';
+      });
+    }
+
     /**
      * 変更内容リストを DOM に描画する。
+     * 教科ごとにグループ化・定義順に並び替えて表示する。
      * @param {Array<{subject: string, message: string}>} changes
      */
     function renderChangesList(changes) {
@@ -602,29 +734,51 @@
         return;
       }
 
+      // 教科ごとにグループ化
+      var subjectMap = {};
       changes.forEach(function(item) {
-        var li = document.createElement('li');
-        li.className = 'change-item';
-
-        if (item.subject) {
-          var subject = document.createElement('span');
-          subject.className = 'change-item-subject';
-          subject.textContent = item.subject;
-          li.appendChild(subject);
+        var rawSubject = (item.subject || '').trim();
+        var majorSubject = rawSubject.split('/')[0].trim() || 'その他';
+        var subject = rawSubject || 'その他';
+        if (!subjectMap[subject]) {
+          subjectMap[subject] = { major: majorSubject, messages: [] };
         }
+        subjectMap[subject].messages.push(item.message || '');
+      });
 
-        var desc = document.createElement('span');
-        desc.className = 'change-item-desc';
-        desc.textContent = item.message;
-        li.appendChild(desc);
+      // 定義順で並び替え
+      var sortedSubjects = Object.keys(subjectMap).sort(function(a, b) {
+        var ia = SUBJECT_SORT_ORDER_PREVIEW.indexOf(subjectMap[a].major);
+        var ib = SUBJECT_SORT_ORDER_PREVIEW.indexOf(subjectMap[b].major);
+        var ra = ia === -1 ? SUBJECT_SORT_ORDER_PREVIEW.length : ia;
+        var rb = ib === -1 ? SUBJECT_SORT_ORDER_PREVIEW.length : ib;
+        if (ra !== rb) return ra - rb;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+
+      sortedSubjects.forEach(function(subject) {
+        var li = document.createElement('li');
+        li.className = 'change-group';
+
+        var subjectEl = document.createElement('span');
+        subjectEl.className = 'change-group-subject';
+        subjectEl.textContent = subject;
+        li.appendChild(subjectEl);
+
+        var ul = document.createElement('ul');
+        ul.className = 'change-group-items';
+        subjectMap[subject].messages.forEach(function(msg) {
+          var item = document.createElement('li');
+          item.className = 'change-group-item';
+          item.innerHTML = '• ' + renderTagsForPreview(msg);
+          ul.appendChild(item);
+        });
+        li.appendChild(ul);
 
         list.appendChild(li);
       });
     }
 
-    /**
-     * GAS の createPreviewPdf を非同期呼び出しし、PDF iframe を遅延読み込みする。
-     */
     /**
      * GAS の createPreviewPdf を非同期呼び出しし、PDF.js でキャンバスに描画する。
      */
