@@ -59,23 +59,18 @@ function sendGooglechat(messageContents, webhookUrl) {
     return a < b ? -1 : a > b ? 1 : 0;
   });
 
-  // 変更内容を1つの textParagraph にまとめる
-  // 教科名を太字、各項目を • 箇条書きで結合
-  const changeLines = [];
-  sortedSubjects.forEach(function(subject) {
-    changeLines.push("<b>" + subject + "</b>");
+  // 教科ごとに textParagraph を分けて生成
+  const changeWidgets = sortedSubjects.map(function(subject) {
+    const lines = ["<b>" + subject + "</b>"];
     subjectMap[subject].messages.forEach(function(msg) {
-      changeLines.push("• " + renderTagsForChat(msg));
+      lines.push("• " + renderTagsForChat(msg));
     });
-  });
-
-  const changeWidgets = [
-    {
+    return {
       "textParagraph": {
-        "text": changeLines.join("<br>")
+        "text": lines.join("<br>")
       }
-    }
-  ];
+    };
+  });
 
   // 送信するテキストメッセージ
   const textMessage = "「" + messageContents.sheetName + "」が更新されました。";
