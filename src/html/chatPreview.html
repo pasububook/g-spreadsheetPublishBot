@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Chat 送信プレビュー</title>
+  <style>
+    :root {
+      --primary-color: #4285f4;
+      --hover-bg: #f1f3f4;
+      --border-color: #e0e0e0;
+      --text-color: #3c4043;
+      --modal-bg: #ffffff;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Google Sans", "Roboto", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-color);
+      background-color: var(--modal-bg);
+      overflow: hidden;
+    }
+
+    /* ------------------------------
+       全体レイアウト
+       ------------------------------ */
+    .layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ------------------------------
+       ヘッダー
+       ------------------------------ */
+    .modal-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: #fff;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .view-controls {
+      display: flex;
+      gap: 4px;
+      background-color: var(--hover-bg);
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .view-btn {
+      background: transparent;
+      border: none;
+      padding: 6px;
+      cursor: pointer;
+      border-radius: 4px;
+      color: var(--text-color);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .view-btn:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .view-btn.active {
+      background-color: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      color: var(--primary-color);
+    }
+
+    /* ------------------------------
+       ボディ (左右パネル)
+       ------------------------------ */
+    .modal-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background-color: #f8f9fa;
+      min-height: 0;
+    }
+
+    .panel {
+      height: 100%;
+      transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .panel-left {
+      width: 50%;
+      background-color: #fff;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .panel-right {
+      width: 50%;
+      background-color: #f1f3f4;
+    }
+
+    .left-content-wrapper {
+      padding: 24px;
+    }
+
+    .iframe-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iframe-container iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+    }
+
+    /* ------------------------------
+       カード
+       ------------------------------ */
+    .edit-card {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: #fafbfc;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--text-color);
+    }
+
+    /* ------------------------------
+       変更内容リスト
+       ------------------------------ */
+    .changes-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .change-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: #fff;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .change-item:last-child {
+      border-bottom: none;
+    }
+
+    .change-item-subject {
+      display: block;
+      font-weight: 500;
+      color: #1a73e8;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+
+    .change-item-desc {
+      display: block;
+      color: var(--text-color);
+      word-break: break-word;
+    }
+
+    /* ------------------------------
+       フッター
+       ------------------------------ */
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      background-color: #fff;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--primary-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      background-color: #3367d6;
+    }
+
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="layout">
+
+    <!-- ヘッダー -->
+    <div class="modal-header">
+      <div class="view-controls">
+        <button class="view-btn" data-view="left" title="編集のみ表示">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M12 3v18"></path>
+            <path d="M3 5c0-1.1.9-2 2-2h7v18H5c-1.1 0-2-.9-2-2V5z" fill="currentColor" opacity="0.4" stroke="none"></path>
+          </svg>
+        </button>
+        <button class="view-btn active" data-view="split" title="分割表示">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M12 3v18"></path>
+            <path d="M3 5c0-1.1.9-2 2-2h7v18H5c-1.1 0-2-.9-2-2V5z" fill="currentColor" opacity="0.4" stroke="none"></path>
+            <path d="M12 3h7c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2h-7V3z" fill="currentColor" opacity="0.4" stroke="none"></path>
+          </svg>
+        </button>
+        <button class="view-btn" data-view="right" title="プレビューのみ表示">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M12 3v18"></path>
+            <path d="M12 3h7c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2h-7V3z" fill="currentColor" opacity="0.4" stroke="none"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ボディ -->
+    <div class="modal-body">
+
+      <!-- 左パネル: 編集内容 -->
+      <div class="panel panel-left" id="panel-left">
+        <div class="left-content-wrapper">
+
+          <div class="edit-card">
+            <div class="card-header">
+              <h3 class="card-title">Google Chat 送信内容</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="form-group">
+                <label class="form-label">変更内容 (取得済み)</label>
+                <ul class="changes-list">
+                  <li class="change-item">
+                    <span class="change-item-subject">数学/理数数学1</span>
+                    <span class="change-item-desc">軽微な編集</span>
+                  </li>
+                  <li class="change-item">
+                    <span class="change-item-subject">英語/論理・表現II</span>
+                    <span class="change-item-desc">マテリアルアイコンを追加</span>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 右パネル: プレビュー -->
+      <div class="panel panel-right" id="panel-right">
+        <div class="iframe-container">
+          <iframe src="https://drive.google.com/file/d/1bYs55YAxEH4ZLnWJ2Gruv5PkSD9o_01u/preview"></iframe>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- フッター -->
+    <div class="modal-footer">
+      <button class="btn btn-secondary">キャンセル</button>
+      <button class="btn btn-primary" id="btn-submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        Google Chat に送信
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btns = document.querySelectorAll('.view-btn');
+      const panelLeft = document.getElementById('panel-left');
+      const panelRight = document.getElementById('panel-right');
+
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          const viewMode = btn.dataset.view;
+
+          if (viewMode === 'split') {
+            panelLeft.style.width = '50%';
+            panelRight.style.width = '50%';
+            panelLeft.style.borderRight = '1px solid var(--border-color)';
+          } else if (viewMode === 'left') {
+            panelLeft.style.width = '100%';
+            panelRight.style.width = '0%';
+            panelLeft.style.borderRight = 'none';
+          } else if (viewMode === 'right') {
+            panelLeft.style.width = '0%';
+            panelRight.style.width = '100%';
+            panelLeft.style.borderRight = 'none';
+          }
+        });
+      });
+
+      document.getElementById('btn-submit').addEventListener('click', () => {
+        showToast('Google Chat への送信リクエストを受け付けました。');
+      });
+
+      function showToast(message) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = [
+          'position: fixed',
+          'bottom: 30px',
+          'left: 50%',
+          'transform: translateX(-50%)',
+          'background-color: #323232',
+          'color: #fff',
+          'padding: 14px 24px',
+          'border-radius: 8px',
+          'font-size: 14px',
+          'font-family: inherit',
+          'box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14)',
+          'z-index: 10000',
+          'opacity: 0',
+          'transition: opacity 0.3s ease',
+        ].join(';');
+
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.style.opacity = '1';
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+    });
+  </script>
+</body>
+</html>
