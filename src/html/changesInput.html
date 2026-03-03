@@ -1011,9 +1011,26 @@ function handleEditorKeydown(e) {
 
 /**
  * タグ挿入 & 教科自動入力
+ *
+ * @param {string} text - ユーザー入力テキスト。"name;type" 形式でタイプを指定可能。
+ *   name 中に ";" が含まれる場合は全角セミコロン "；" へサニタイズされる。
+ * @param {boolean} [isAutoConfirm=false] - 自動確定フラグ
  */
 function insertTag(text, isAutoConfirm = false) {
   if (!queryStartRange) return;
+
+  // --- name;type パース ---
+  // 最初の ";" をデリミタとして name と type を分離する
+  let tagName = text;
+  let explicitType = null;
+  const separatorIdx = text.indexOf(';');
+  if (separatorIdx !== -1) {
+    tagName = text.substring(0, separatorIdx);
+    explicitType = text.substring(separatorIdx + 1).trim() || null;
+  }
+
+  // name 中に残存する ";" を全角セミコロンへサニタイズ
+  tagName = tagName.replace(/;/g, '；');
 
   const sel = window.getSelection();
   const currentRange = sel.getRangeAt(0);
@@ -1023,12 +1040,12 @@ function insertTag(text, isAutoConfirm = false) {
   rangeToReplace.setEnd(currentRange.endContainer, currentRange.endOffset);
   rangeToReplace.deleteContents();
 
-  const category = getCategory(text);
+  const category = getCategory(tagName, explicitType);
   const tag = document.createElement('span');
   tag.className = 'tag';
   tag.dataset.type = category;
   tag.contentEditable = false;
-  tag.textContent = text;
+  tag.textContent = tagName;
   
   rangeToReplace.insertNode(tag);
   
@@ -1048,7 +1065,7 @@ function insertTag(text, isAutoConfirm = false) {
   // 念のためフォーカスを戻す
   if (activeEditor) activeEditor.focus();
 
-  const subject = getSubject(text);
+  const subject = getSubject(tagName);
   if (subject && activeEditor) {
     const row = activeEditor.closest('.row');
     const select = row.querySelector('.subject-select');
@@ -1081,7 +1098,14 @@ function showSuggestions(query) {
   if (query !== "" && suggestionTrigger !== "@") {
     const exists = filteredSuggestions.some(i => i.name === query);
     if (!exists) {
-      filteredSuggestions.push({ name: query, type: "その他", isNew: true });
+      // name;type 形式のクエリからタイプをプレビュー
+      let previewType = "その他";
+      const sepIdx = query.indexOf(';');
+      if (sepIdx !== -1) {
+        const parsedType = query.substring(sepIdx + 1).trim();
+        if (parsedType && TAG_CATEGORIES[parsedType]) previewType = parsedType;
+      }
+      filteredSuggestions.push({ name: query, type: previewType, isNew: true });
     }
   }
 
@@ -1257,12 +1281,14 @@ document.getElementById('save-btn').onclick = function() {
     if (editor.innerText.trim() !== "" || editor.querySelector('.tag')) {
       const subject = select ? select.value : "";
       
-      // コンテンツの変換処理: タグ(span)を <タグ名> に変換
+      // コンテンツの変換処理: タグ(span)を <name;type> 形式に変換
+      // name は insertTag 時にサニタイズ済みのため ";" を含まない
       const tempDiv = editor.cloneNode(true);
       const tags = tempDiv.querySelectorAll('.tag');
       tags.forEach(tagEl => {
         const tagName = tagEl.textContent;
-        const textNode = document.createTextNode(`<${tagName}>`);
+        const tagType = tagEl.dataset.type || 'その他';
+        const textNode = document.createTextNode(`<${tagName};${tagType}>`);
         tagEl.parentNode.replaceChild(textNode, tagEl);
       });
       
