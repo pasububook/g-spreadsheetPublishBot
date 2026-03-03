@@ -1,36 +1,61 @@
 # g-spreadsheetPublishBot
-Google Spreadsheet のシートを PDF にエクスポートし、 Webhook 経由で送信します
+
+Google Spreadsheet のシートを PDF にエクスポートし、Google Chat Webhook 経由で通知・配布するための Google Apps Script プロジェクトです。
+
+## 概要
+
+スプレッドシートに「出版」メニューを追加し、変更内容の記録から PDF 生成・Google Chat への通知までをワンクリックで実行できます。  
+カラー版とモノクロ印刷用の PDF を同時に生成し、Google Drive に自動保存します。
+
+## 主な機能
+
+- **変更内容の記録** — サイドバーから教科・変更内容を入力し、`.changelog` シートへ蓄積
+- **PDF プレビュー** — 送信前にモーダルダイアログで PDF を確認（[PDF.js](https://mozilla.github.io/pdf.js/) 使用）
+- **PDF 自動エクスポート** — カラー版・モノクロ版の PDF を Google Drive に保存
+- **Google Chat 通知** — 変更一覧・ダウンロードリンク付きのカードメッセージを Webhook で送信
+- **自動セットアップ** — `runAutoSetup()` で必要なシート構成を一括作成
+
+## ファイル構成
+
+```
+src/
+  main.gs              # エントリポイント・メニュー定義
+  auto_setup.gs        # 初回セットアップ（シート自動生成）
+  config.gs            # ドキュメント設定・教科データ定義
+  export_pdf.gs        # PDF エクスポート処理
+  notice.gs            # Google Chat 通知処理
+  print.gs             # モノクロ印刷用シートの生成
+  create_folder.gs     # Google Drive フォルダ管理
+  delete_branch_sheet.gs  # 一時シートの削除
+  html/
+    changesInput.html  # 変更内容入力サイドバー
+    chatPreview.html   # 送信前プレビューモーダル
+appsscript.json        # Apps Script マニフェスト
+```
+
+## Google Drive 出力構成
+
+```
+${PARENT_FOLDER_ID}/
+  └ issue/
+      └ ${yyyyMMdd_HHmmss}/
+          ├ ${sheet name} - ${yyyyMMdd_HHmmss}.pdf        # カラー版
+          └ [print]${sheet name} - ${yyyyMMdd_HHmmss}.pdf # モノクロ版
+```
 
 ## セットアップ
-### 1. スプレッドシートの `拡張機能` の `Apps Script` でプロジェクトの作成
-### 2. PDF保存用フォルダの作成
-Google Drive 上に、エクスポートされたPDFを保存するためのフォルダを作成します。作成したフォルダを起点に以下のような構成でファイルが保存されます。
 
-#### フォルダ構成例
-```
-${root folder name}/
-　├ ${yyyyMMdd_hhmm}/
-　│　└ ${sheet name} - ${yyyyMMdd_hhmmss}.pdf
-　│　└ [print]${sheet name} - ${yyyyMMdd_hhmmss}.pdf
-```
-※ `[print]` がついたPDFはモノクロバージョンです。
+セットアップ手順の詳細は [docs/SETUP.md](docs/SETUP.md) を参照してください。
 
-#### 例
-```
-pdf/
-　├ 20250822_2214/
-　│　└ テスト - 20250822_221411.pdf
-　│　└ [print]テスト - 20250822_221411.pdf
-　├ 20250822_2234/
-　│　└ テスト - 20250822_223412.pdf
-　│　└ [print]テスト - 20250822_223412.pdf
-　└ ...
-```
+## スクリプトプロパティ
 
-### 3. スクリプトプロパティの設定
-以下のプロパティを設定します。
-- `GOOGLE_CHAT_WEBHOOK_URL`: Google Chat の Webhook のURL
-- `PARENT_FOLDER_ID`: エクスポートされたPDFのフォルダが保存されるフォルダのID
+| プロパティ名 | 説明 |
+|---|---|
+| `GOOGLE_CHAT_WEBHOOK_URL` | 通知先 Google Chat の Incoming Webhook URL |
+| `PARENT_FOLDER_ID` | エクスポート先 Google Drive フォルダの ID （省略時はスプレッドシートと同じフォルダ） |
 
-### 4. プログラムの配置
-本レポジトリに存在する全ての `.gs` ファイルをコピーし、Apps Scriptのプロジェクト内に同一ファイル名で貼り付け、保存します。
+## ライセンス
+
+本プロジェクトは [MIT License](LICENSE.md) のもとで公開されています。
+
+本プロジェクトが使用するサードパーティライブラリのライセンスについては [LICENSES.md](LICENSES.md) を参照してください。
