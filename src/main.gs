@@ -299,11 +299,11 @@ function mergeMain() {
   Logger.log('シート名: ' + sheetName);
   Logger.log('スプレッドシートID: ' + spreadsheetId);
 
-  // 変更内容の取得
+  // 変更内容の取得 ([subject, commitMessage] の2次元配列)
   const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
   var changes = []
   for (let i = 0; i < changelogs.length; i++) {
-    changes.push(changelogs[i][3])
+    changes.push([changelogs[i][2], changelogs[i][3]])
   }
 
   // 編集者のメールアドレスを取得
