@@ -19,7 +19,7 @@ function renderTagsForChat(text) {
   return text.replace(/<([^;>]+);([^>]*)>/g, function(match, name, type) {
     const trimmedType = type.trim();
     const catColor = (TAG_CATEGORIES_NOTICE[trimmedType] || TAG_CATEGORIES_NOTICE["その他"]).color;
-    return '<font color="' + catColor + '">' + name + '</font>';
+    return '「<b><font color="' + catColor + '">' + name + '</font></b>」';
   });
 }
 
@@ -138,7 +138,6 @@ function sendGooglechat(messageContents, webhookUrl) {
     },
     "sections": [
       {
-        "header": "変更内容",
         "collapsible": false,
         "widgets": changeWidgets
       },
