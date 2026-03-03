@@ -273,8 +273,9 @@ function mergeMain() {
   configSheet.getRange("B3").setValue(Number(nowDocVer) + 1);
   SpreadsheetApp.flush();
 
-  // フォルダを作成
-  const folder_id = createFolderWithCurrentTimestamp(exportParentFolderId, exportStartedAt);
+  // フォルダを作成 (PARENT_FOLDER_ID/issue/yyyyMMdd_HHmmss)
+  const issueFolderId = getOrCreateSubFolder(exportParentFolderId, 'issue');
+  const folder_id = createFolderWithCurrentTimestamp(issueFolderId, exportStartedAt);
 
   // エクスポート用にスプレッドシートをコピー
   const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt, sheetName);
