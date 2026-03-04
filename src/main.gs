@@ -27,17 +27,77 @@ function showCommitRevision() {
  * @return {void}
  */
 function mergeMainPermission() {
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.alert("Google Chat に送信します", ui.ButtonSet.OK_CANCEL);
+  const html = HtmlService.createHtmlOutputFromFile('src/html/chatPreview')
+      .setWidth(960)
+      .setHeight(640);
+  SpreadsheetApp.getUi().showModalDialog(html, '送信内容の確認');
+}
 
-  if (response == "OK") {
-    mergeMain();
+/**
+ * モーダルから非同期で呼び出し、未送信の変更内容を返す。
+ * @return {Array<{subject: string, message: string}>}
+ */
+function getUnmergedChangelogsForPreview() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
+  return changelogs.map(function(row) {
+    return {
+      subject: (row[2] || '').toString(),
+      message: (row[3] || '').toString()
+    };
+  });
+}
+
+/**
+ * 現在のアクティブシートを PDF としてエクスポートし、base64 文字列で返す。
+ * 同時に Drive の ${PARENT_FOLDER_ID}/preview/yyyyMMdd_HHmmss.pdf へ保存する。
+ * HTML 側で PDF.js に渡し、キャンバスに直接描画する。
+ * @return {string} base64 エンコードされた PDF
+ */
+function createPreviewPdf() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  const url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=pdf'
+    + '&gid=' + sheet.getSheetId()
+    + '&size=A4'
+    + '&portrait=true'
+    + '&fitw=true'
+    + '&top_margin=0.75'
+    + '&bottom_margin=0.75'
+    + '&left_margin=0.75'
+    + '&right_margin=0.75'
+    + '&printtitle=true'
+    + '&pagenum=CENTER'
+    + '&gridlines=false';
+
+  const token = ScriptApp.getOAuthToken();
+  const response = UrlFetchApp.fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + token },
+    muteHttpExceptions: true
+  });
+
+  if (response.getResponseCode() !== 200) {
+    throw new Error('PDF 生成に失敗しました。ステータス: ' + response.getResponseCode());
   }
+
+  const pdfContent = response.getContent();
+
+  // Drive の ${PARENT_FOLDER_ID}/preview/ へ保存
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const PARENT_FOLDER_ID = scriptProperties.getProperty('PARENT_FOLDER_ID');
+  const exportParentFolderId = resolveExportParentFolderId(PARENT_FOLDER_ID, ss.getId());
+  const previewFolderId = getOrCreateSubFolder(exportParentFolderId, 'preview');
+  const timestamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+  const previewFolder = DriveApp.getFolderById(previewFolderId);
+  previewFolder.createFile(Utilities.newBlob(pdfContent, 'application/pdf', timestamp + '.pdf'));
+
+  return Utilities.base64Encode(pdfContent);
 }
 
 /**
  * 変更内容を .changelog に保存する。
- * @param {string[]} changes 変更内容配列
+ * @param {(string[]|Array<Array<string>>)} changes 変更内容配列
  * @return {void}
  */
 function saveCommitRevision(changes) {
@@ -49,7 +109,26 @@ function saveCommitRevision(changes) {
 
   var changelogSheet_array = []
   for (let i = 0; i < changes.length; i++) {
-    changelogSheet_array.push([timeStamp, editorEmail, changes[i], false])
+    const row = changes[i];
+    let subject = '';
+    let commitMessage = '';
+
+    if (Array.isArray(row)) {
+      subject = row[0] != null ? String(row[0]).trim() : '';
+      commitMessage = row[1] != null ? String(row[1]).trim() : '';
+    } else {
+      commitMessage = row != null ? String(row).trim() : '';
+    }
+
+    if (commitMessage === '') {
+      continue;
+    }
+
+    changelogSheet_array.push([timeStamp, editorEmail, subject, commitMessage, false])
+  }
+
+  if (changelogSheet_array.length === 0) {
+    return;
   }
 
   changelogSheet.getRange(changelogSheet.getLastRow() + 1, 1, changelogSheet_array.length, changelogSheet_array[0].length).setValues(changelogSheet_array)
@@ -68,12 +147,13 @@ function getUnmergedChangelogs(spreadsheetId, sheetName) {
     return [];
   }
 
-  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, Math.max(5, changelogSheet.getLastColumn())).getValues();
 
   var changelog = [];
 
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][3] === false) {
+    const isMerged = allChangelogs[i][4];
+    if (isMerged !== true && isMerged !== 'TRUE') {
       changelog.push(allChangelogs[i]);
     }
   }
@@ -94,10 +174,11 @@ function markChangelogsAsMerged(spreadsheetId, sheetName) {
     return;
   }
 
-  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, changelogSheet.getLastColumn()).getValues();
+  const allChangelogs = changelogSheet.getRange(2, 1, lastRow - 1, Math.max(5, changelogSheet.getLastColumn())).getValues();
   for (let i = 0; i < allChangelogs.length; i++) {
-    if (allChangelogs[i][3] === false) {
-      changelogSheet.getRange(i + 2, 4).setValue(true);
+    const isMerged = allChangelogs[i][4];
+    if (isMerged !== true && isMerged !== 'TRUE') {
+      changelogSheet.getRange(i + 2, 5).setValue(true);
     }
   }
 }
@@ -200,12 +281,12 @@ function resolveExportParentFolderId(configuredParentFolderId, spreadsheetId) {
  */
 function replaceExportHeaderLabel(spreadsheetId, sheetName) {
   const exportSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  const targetSheet = exportSpreadsheet.getSheetByName(sheetName);
+  const targetSheet = exportSpreadsheet.getSheetByName(".config");
   if (!targetSheet) {
     throw new Error('対象シートが見つかりません: ' + sheetName);
   }
 
-  targetSheet.getRange('F1').setValue('Issue');
+  targetSheet.getRange('B2').setValue('Issue');
 }
 
 /**
@@ -221,6 +302,8 @@ function mergeMain() {
 
   // 現在開かれているスプレッドシートのシート名とスプレッドシートIDを取得
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  ss.toast('Google Chat への送信処理を開始しました…', '送信中', 10);
   const sheetName = ss.getActiveSheet().getName();
   const spreadsheetId = ss.getId();
   const exportParentFolderId = resolveExportParentFolderId(PARENT_FOLDER_ID, spreadsheetId);
@@ -228,11 +311,11 @@ function mergeMain() {
   Logger.log('シート名: ' + sheetName);
   Logger.log('スプレッドシートID: ' + spreadsheetId);
 
-  // 変更内容の取得
+  // 変更内容の取得 ([subject, commitMessage] の2次元配列)
   const changelogs = getUnmergedChangelogs(ss.getId(), '.changelog');
   var changes = []
   for (let i = 0; i < changelogs.length; i++) {
-    changes.push(changelogs[i][2])
+    changes.push([changelogs[i][2], changelogs[i][3]])
   }
 
   // 編集者のメールアドレスを取得
@@ -248,14 +331,15 @@ function mergeMain() {
   const publisherName = editors.find(row => row[0] === publisherEmail)[1];
 
   // バージョン表記の更新
-  // '.config'!B2: バージョン情報が記載されたせる
+  // '.config'!B3: バージョン情報が記載されたセル
   const configSheet = ss.getSheetByName(".config")
-  const nowDocVer = configSheet.getRange("B2").getValue();
-  configSheet.getRange("B2").setValue(Number(nowDocVer) + 1);
+  const nowDocVer = configSheet.getRange("B3").getValue();
+  configSheet.getRange("B3").setValue(Number(nowDocVer) + 1);
   SpreadsheetApp.flush();
 
-  // フォルダを作成
-  const folder_id = createFolderWithCurrentTimestamp(exportParentFolderId, exportStartedAt);
+  // フォルダを作成 (PARENT_FOLDER_ID/issue/yyyyMMdd_HHmmss)
+  const issueFolderId = getOrCreateSubFolder(exportParentFolderId, 'issue');
+  const folder_id = createFolderWithCurrentTimestamp(issueFolderId, exportStartedAt);
 
   // エクスポート用にスプレッドシートをコピー
   const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt, sheetName);

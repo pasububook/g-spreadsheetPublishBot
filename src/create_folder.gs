@@ -1,4 +1,21 @@
 /**
+ * 指定した親フォルダ内に指定名のサブフォルダを取得または作成します。
+ * 同名フォルダが既に存在する場合は既存のフォルダを返します。
+ *
+ * @param {string} parentFolderId 親フォルダのID。
+ * @param {string} subFolderName 取得または作成するサブフォルダ名。
+ * @return {string} サブフォルダのID。
+ */
+function getOrCreateSubFolder(parentFolderId, subFolderName) {
+  const parentFolder = DriveApp.getFolderById(parentFolderId);
+  const existing = parentFolder.getFoldersByName(subFolderName);
+  if (existing.hasNext()) {
+    return existing.next().getId();
+  }
+  return parentFolder.createFolder(subFolderName).getId();
+}
+
+/**
  * 指定したフォルダ内に現在時刻を名前に持つ新しいフォルダを作成します。
  * 例: 現在時刻が2025年6月14日21時27分の場合、フォルダ名は「20250614_2127」となります。
  *
