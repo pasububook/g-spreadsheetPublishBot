@@ -217,35 +217,53 @@
 
     /* --- Tags (Pills) --- */
     .tag {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 12px;
-      padding: 0 8px;
+      display: inline;
       margin: 0 2px;
-      font-size: 13px;
-      height: 22px;
-      vertical-align: middle;
+      font-size: 0; /* inline-block 間のスペース除去 */
       user-select: none;
       cursor: default;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      /* カーソルが入らないように念のため指定 */
-      user-select: none;
     }
-    .tag::before {
-      content: '';
+    /* 各文字を包むスパン */
+    .tag .char {
       display: inline-block;
+      background-color: var(--tag-bg, #F2F4F4);
+      font-size: 13px;
+      height: 22px;
+      line-height: 22px;
+      vertical-align: middle;
+    }
+    /* 最初の文字: 左角丸 + ドット */
+    .tag .char:first-child {
+      border-radius: 12px 0 0 12px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .tag .char:first-child::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      left: 8px;
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      margin-right: 6px;
       background-color: var(--tag-dot, #7F8C8D);
     }
+    /* 最後の文字: 右角丸 + 右パディング */
+    .tag .char:last-child {
+      border-radius: 0 12px 12px 0;
+      padding-right: 8px;
+    }
+    /* 1文字タグ (first && last) の場合は全角丸 */
+    .tag .char:first-child:last-child {
+      border-radius: 12px;
+    }
     /* Tag Variations */
-    .tag[data-type="教科書"] { background-color: var(--tag-textbook-bg); --tag-dot: var(--tag-textbook-dot); }
-    .tag[data-type="資料集"] { background-color: var(--tag-material-bg); --tag-dot: var(--tag-material-dot); }
-    .tag[data-type="ワーク"] { background-color: var(--tag-work-bg);     --tag-dot: var(--tag-work-dot); }
-    .tag[data-type="プリント"] { background-color: var(--tag-print-bg);   --tag-dot: var(--tag-print-dot); }
-    .tag[data-type="その他"] { background-color: var(--tag-other-bg);     --tag-dot: var(--tag-other-dot); }
+    .tag[data-type="教科書"] { --tag-bg: var(--tag-textbook-bg); --tag-dot: var(--tag-textbook-dot); }
+    .tag[data-type="資料集"] { --tag-bg: var(--tag-material-bg); --tag-dot: var(--tag-material-dot); }
+    .tag[data-type="ワーク"] { --tag-bg: var(--tag-work-bg);     --tag-dot: var(--tag-work-dot); }
+    .tag[data-type="プリント"] { --tag-bg: var(--tag-print-bg);   --tag-dot: var(--tag-print-dot); }
+    .tag[data-type="その他"] { --tag-bg: var(--tag-other-bg);     --tag-dot: var(--tag-other-dot); }
 
     /* --- Suggestion Box --- */
     #suggestion-box {
@@ -381,13 +399,13 @@ const SUGGEST_DB = [
   // 国語/現代文α
   // ==========================================
   {
-    name: "精選現代文 改訂版",
+    name: "1",
     type: "教科書",
     subject: "国語/現代文α",
     keywords: [
       "seisen", "gendai", "kaiteiban",
       "s", "g",
-      "せいせん", "げんだい", "かいていばん"
+      "せいせん", "げんだい", "かいていばん", "いちもじ"
     ]
   },
   {
@@ -585,7 +603,7 @@ const SUGGEST_DB = [
     ]
   },
   {
-    name: "英語表現 補助プリント集",
+    name: "英語表現 補助プリント集 すごくすごくすごくすごく長い",
     type: "プリント",
     subject: "英語/ライティング入門",
     keywords: [
@@ -1045,7 +1063,13 @@ function insertTag(text, isAutoConfirm = false) {
   tag.className = 'tag';
   tag.dataset.type = category;
   tag.contentEditable = false;
-  tag.textContent = tagName;
+  // 1字ずつ .char span に分解して挿入
+  [...tagName].forEach(char => {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = char;
+    tag.appendChild(span);
+  });
   
   rangeToReplace.insertNode(tag);
   
