@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <link rel="stylesheet" href="./style/changesInput.css">
+</head>
+<body>
+  <div id="list-container">
+    <!-- Rows will be injected here -->
+  </div>
+  
+  <!-- Empty State Placeholder -->
+  <div id="empty-state">
+    <span class="material-symbols-outlined">playlist_add</span>
+    <p>条件がありません。<br>「条件を追加」ボタンで追加してください。</p>
+  </div>
+
+  <div style="padding: 0 8px 8px 8px;">
+    <button class="add-btn" id="add-row-btn">
+      <span class="material-symbols-outlined">add</span> 条件を追加
+    </button>
+  </div>
+
+  <div class="footer">
+    <button class="action-btn btn-cancel" onclick="google.script.host.close()">キャンセル</button>
+    <button class="action-btn btn-save" id="save-btn">保存</button>
+  </div>
+  <div id="status-msg" style="text-align:center; font-size:12px; color:#666; padding-bottom:4px;"></div>
+
+  <!-- Suggestion Popup -->
+  <div id="suggestion-box"></div>
+
+  <script src="./scripts/changesInput.js"></script>
+</body>
+</html>
