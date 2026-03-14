@@ -1,6 +1,7 @@
 // ドキュメントデータ
 const docTitle = "dev_2年次_秋季休業課題・テスト"
 const isShowCheckbox = false
+const isProtectEditSheet = true
 
 // 教科データ
 const subjectData = {
