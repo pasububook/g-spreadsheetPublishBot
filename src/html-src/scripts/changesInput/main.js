@@ -1,7 +1,7 @@
 
 import { state, dom } from './state.js';
 import { addNewRow } from './row.js';
-import { saveCommitRevision, closeSidebar } from '../changesInputApi.js';
+import { saveCommitRevision, closeSidebar } from './changesInputApi.js';
 
 // Setup initialization
 window.onload = () => {
