@@ -1,10 +1,7 @@
+
 :root {
-    --primary-color: #4285f4;
-    --hover-bg: #f1f3f4;
-    --border-color: #e0e0e0;
-    --text-color: #3c4043;
     --placeholder-color: #9aa0a6;
-    /* 定義済みカラー (仕様書に基づく) */
+    /* 定義済みカラー */
     --tag-textbook-bg: #D6EAF8; --tag-textbook-dot: #2E86C1;
     --tag-material-bg: #D5F5E3; --tag-material-dot: #27AE60;
     --tag-work-bg: #FAE5D3;     --tag-work-dot: #E67E22;

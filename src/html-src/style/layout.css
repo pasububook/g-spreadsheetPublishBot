@@ -1,0 +1,80 @@
+/* ------------------------------
+    全体レイアウト
+    ------------------------------ */
+.layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* ------------------------------
+    ヘッダー
+    ------------------------------ */
+.modal-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: #fff;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* ------------------------------
+    ボディ (左右パネル)
+    ------------------------------ */
+.modal-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    min-height: 0;
+}
+
+.panel {
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex-shrink: 0;
+}
+
+.panel-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.panel-left {
+    width: 50%;
+    background-color: #fff;
+    border-right: 1px solid var(--border-color);
+}
+
+.panel-right {
+    width: 50%;
+    background-color: #f1f3f4;
+}
+
+.left-content-wrapper {
+    padding: 24px;
+}
+
+/* ------------------------------
+    フッター
+    ------------------------------ */
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background-color: #fff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
