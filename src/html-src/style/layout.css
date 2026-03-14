@@ -4,7 +4,9 @@
 .layout {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
 }
 
 /* ------------------------------
@@ -18,9 +20,6 @@
     border-bottom: 1px solid var(--border-color);
     background-color: #fff;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 
 /* ------------------------------
@@ -74,7 +73,4 @@
     justify-content: flex-end;
     gap: 12px;
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
 }

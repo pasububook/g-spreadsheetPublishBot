@@ -22,6 +22,7 @@ html, body {
     color: var(--text-color);
     background-color: var(--modal-bg);
     overflow: hidden;
+    overscroll-behavior: none;
 }
 
 .material-symbols-outlined {
