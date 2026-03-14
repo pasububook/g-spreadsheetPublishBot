@@ -171,6 +171,56 @@ export function handleEditorKeydown(e) {
   }
 }
 
+function getSelectionTextIncludingTags(editor) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return "";
+
+  const range = sel.getRangeAt(0);
+  const ancestor = range.commonAncestorContainer;
+  const ancestorElement = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+  if (!ancestorElement || !editor.contains(ancestorElement)) return "";
+
+  const fragment = range.cloneContents();
+  fragment.querySelectorAll('.inline-ghost').forEach(el => el.remove());
+  fragment.querySelectorAll('.tag').forEach(tagEl => {
+    const textNode = document.createTextNode(tagEl.textContent || "");
+    tagEl.parentNode.replaceChild(textNode, tagEl);
+  });
+
+  const temp = document.createElement('div');
+  temp.appendChild(fragment);
+  return (temp.innerText || temp.textContent || "").replace(/\u00A0/g, ' ');
+}
+
+function copySelectionToClipboard(e, editor) {
+  const text = getSelectionTextIncludingTags(editor);
+  if (text === "") return false;
+  if (!e.clipboardData) return false;
+
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', text);
+  return true;
+}
+
+export function handleEditorCopy(e) {
+  copySelectionToClipboard(e, e.currentTarget);
+}
+
+export function handleEditorCut(e) {
+  const editor = e.currentTarget;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+  const range = sel.getRangeAt(0);
+  const copied = copySelectionToClipboard(e, editor);
+  if (!copied) return;
+
+  range.deleteContents();
+  updateEditorEmptyState(editor);
+  closeSuggestions();
+  removeInlineSuggestion();
+}
+
 /**
  * タグ挿入 & 教科自動入力
  *
