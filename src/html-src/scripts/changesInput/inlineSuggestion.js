@@ -1,6 +1,6 @@
 
 import { state } from './state.js';
-import { SUGGEST_DB } from './constants.js';
+import { SUGGEST_DB } from './config.js';
 import { insertTag } from './editor.js';
 
 export function getQueryAtCursor(sel) {

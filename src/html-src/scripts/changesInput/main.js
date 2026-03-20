@@ -1,12 +1,16 @@
-
 import { state, dom } from './state.js';
 import { addNewRow } from './row.js';
 import { saveCommitRevision, closeSidebar } from './changesInputApi.js';
 
 // Setup initialization
-window.onload = () => {
+// Due to top-level await in config.js, module evaluation may take place after DOMContentLoaded/load
+if (document.readyState !== 'loading') {
   addNewRow();
-};
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    addNewRow();
+  });
+}
 
 document.getElementById('add-row-btn').onclick = () => {
   addNewRow();

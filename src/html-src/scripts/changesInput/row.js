@@ -1,6 +1,6 @@
 
 import { state, dom } from './state.js';
-import { SUBJECT_LIST } from './constants.js';
+import { SUBJECT_LIST } from './config.js';
 import { updateEmptyState, updateEditorEmptyState } from './ui.js';
 import { handleDragStart } from './dragDrop.js';
 import { handleEditorInput, handleEditorKeydown, handleEditorCopy, handleEditorCut } from './editor.js';

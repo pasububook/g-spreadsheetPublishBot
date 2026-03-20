@@ -1,6 +1,6 @@
 
 import { state, dom } from './state.js';
-import { SUGGEST_DB, getCategory, TAG_CATEGORIES } from './constants.js';
+import { SUGGEST_DB, getCategory, KNOWN_TYPES } from './config.js';
 import { insertTag } from './editor.js';
 
 export function showSuggestions(query) {
@@ -23,7 +23,7 @@ export function showSuggestions(query) {
       const sepIdx = query.indexOf(';');
       if (sepIdx !== -1) {
         const parsedType = query.substring(sepIdx + 1).trim();
-        if (parsedType && TAG_CATEGORIES[parsedType]) previewType = parsedType;
+        if (parsedType && KNOWN_TYPES.includes(parsedType)) previewType = parsedType;
       }
       state.filteredSuggestions.push({ name: query, type: previewType, isNew: true });
     }
@@ -66,13 +66,8 @@ export function renderSuggestions() {
 
     const typeSpan = document.createElement('span');
     typeSpan.className = 's-cat';
+    if (!item.isNew) typeSpan.dataset.type = item.type;
     typeSpan.textContent = item.isNew ? "新規" : item.type;
-    
-    if (!item.isNew && TAG_CATEGORIES[item.type]) {
-      const catStyle = TAG_CATEGORIES[item.type];
-      typeSpan.style.backgroundColor = catStyle.bg;
-      typeSpan.style.color = catStyle.color;
-    }
 
     metaDiv.appendChild(typeSpan);
     

@@ -24,7 +24,7 @@ async function buildAll() {
           }
         }
       },
-      configFile: false,
+      configFile: false, define: { __CONFIG_GS_RAW__: JSON.stringify(fs.readFileSync(resolve('src/config.gs'), 'utf8')) },
     });
 
     // Minify output HTML

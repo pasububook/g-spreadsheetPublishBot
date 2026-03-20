@@ -1,6 +1,6 @@
 
 import { state, dom } from './state.js';
-import { getCategory, TAG_CATEGORIES, getSubject } from './constants.js';
+import { getCategory, getSubject } from './config.js';
 import { showSuggestions, closeSuggestions, renderSuggestions } from './suggestions.js';
 import { showInlineSuggestion, acceptInlineSuggestion, removeInlineSuggestion, getQueryAtCursor } from './inlineSuggestion.js';
 import { updateEditorEmptyState, updateEmptyState } from './ui.js';

@@ -83,22 +83,15 @@ function setupScrollFade(scrollElId, fadeElId) {
     update();
 }
 
-/** タグカテゴリのカラー定義 */
-var TAG_CATEGORIES_PREVIEW = {
-    '教科書': { color: '#2E86C1' },
-    '資料集': { color: '#27AE60' },
-    'ワーク':  { color: '#E67E22' },
-    'プリント': { color: '#884EA0' },
-    'その他':  { color: '#7F8C8D' }
-};
-
 var SUBJECT_SORT_ORDER_PREVIEW = ['国語', '数学', '理科', '社会', '英語'];
 
 function renderTagsForPreview(text) {
     return text.replace(/<([^;>]+);([^>]*)>/g, function(match, name, type) {
         var trimmedType = type.trim();
-        var cat = TAG_CATEGORIES_PREVIEW[trimmedType] || TAG_CATEGORIES_PREVIEW['その他'];
-        return '「<span style="color:' + cat.color + ';font-weight:500">' + name + '</span>」';
+        if (!['教科書', '資料集', 'ワーク', 'プリント', 'その他'].includes(trimmedType)) {
+            trimmedType = 'その他';
+        }
+        return '「<span class="preview-tag" data-type="' + trimmedType + '">' + name + '</span>」';
     });
 }
 

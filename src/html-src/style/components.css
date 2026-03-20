@@ -112,3 +112,47 @@
     margin-bottom: 12px;
     color: var(--text-color);
 }
+
+/* Tag styles defined from CSS instead of JS inline styles */
+[data-type="教科書"], .tag-教科書 {
+    color: #2E86C1;
+    background-color: #D6EAF8;
+}
+[data-type="資料集"], .tag-資料集 {
+    color: #27AE60;
+    background-color: #D5F5E3;
+}
+[data-type="ワーク"], .tag-ワーク {
+    color: #E67E22;
+    background-color: #FAE5D3;
+}
+[data-type="プリント"], .tag-プリント {
+    color: #884EA0;
+    background-color: #E8DAEF;
+}
+[data-type="その他"], .tag-その他 {
+    color: #7F8C8D;
+    background-color: #F2F4F4;
+}
+
+/* Chat Preview Tag styles */
+.preview-tag[data-type="教科書"] {
+    color: #2E86C1;
+    font-weight: 500;
+}
+.preview-tag[data-type="資料集"] {
+    color: #27AE60;
+    font-weight: 500;
+}
+.preview-tag[data-type="ワーク"] {
+    color: #E67E22;
+    font-weight: 500;
+}
+.preview-tag[data-type="プリント"] {
+    color: #884EA0;
+    font-weight: 500;
+}
+.preview-tag[data-type="その他"] {
+    color: #7F8C8D;
+    font-weight: 500;
+}
