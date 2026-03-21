@@ -19,28 +19,51 @@ Google Spreadsheet のシートを PDF にエクスポートし、Google Chat We
 
 ```
 src/
-  main.gs              # エントリポイント・メニュー定義
-  auto_setup.gs        # 初回セットアップ（シート自動生成）
-  config.gs            # ドキュメント設定・教科データ定義
-  export_pdf.gs        # PDF エクスポート処理
-  notice.gs            # Google Chat 通知処理
-  print.gs             # モノクロ印刷用シートの生成
-  create_folder.gs     # Google Drive フォルダ管理
+  main.gs                 # エントリポイント・メニュー定義
+  auto_setup.gs           # 初回セットアップ（シート自動生成）
+  config.gs               # ドキュメント設定・教科データ定義
+  export_pdf.gs           # PDF エクスポート処理
+  notice.gs               # Google Chat 通知処理
+  print.gs                # モノクロ印刷用シートの生成
+  create_folder.gs        # Google Drive フォルダ管理
   delete_branch_sheet.gs  # 一時シートの削除
-  html/
-    changesInput.html  # 変更内容入力サイドバー
-    chatPreview.html   # 送信前プレビューモーダル
-appsscript.json        # Apps Script マニフェスト
+  html-src/               # HTML サイドバー / モーダル等のソースファイル群
+    changesInput.html     # 変更内容入力サイドバーのエントリポイント
+    chatPreview.html      # 送信前プレビューモーダルのエントリポイント
+    scripts/              # 分割された JavaScript モジュール
+    style/                # 分割された CSS ファイル
+  html/                   # （ビルド結果：デプロイされるバンドル済みのHTML群）
+appsscript.json           # Apps Script マニフェスト
+build.js                  # Vite を用いたビルドスクリプト
+package.json              # フロントエンド開発用パッケージ定義
+```
+
+## 開発とビルド（フロントエンド）
+
+現在、UI 部分（サイドバーやモーダル）は保守性を高めるため、フロントエンドライブラリや JS/CSS ごとに分割して `src/html-src/` 配下で管理しています。  
+Google Apps Script 上で動かすため、`build.js`（および Vite）を使用して単一の HTML ファイルとして `src/html/` にバンドルおよび圧縮するビルドステップが含まれています。
+
+デプロイやテスト実行の前に、必ず以下のコマンドでビルドを行なってください。
+
+```bash
+# 依存パッケージのインストール
+npm install
+
+# バンドルされた HTML ファイルの生成（src/html/ に出力されます）
+npm run build
 ```
 
 ## Google Drive 出力構成
 
 ```
 ${PARENT_FOLDER_ID}/
+  ｜ issue/
+  ｜  └ ${yyyyMMdd_HHmmss}/
+  ｜      ├ ${sheet name} - ${yyyyMMdd_HHmmss}.pdf        # カラー版
+  ｜      └ [print]${sheet name} - ${yyyyMMdd_HHmmss}.pdf # モノクロ版
   └ issue/
-      └ ${yyyyMMdd_HHmmss}/
-          ├ ${sheet name} - ${yyyyMMdd_HHmmss}.pdf        # カラー版
-          └ [print]${sheet name} - ${yyyyMMdd_HHmmss}.pdf # モノクロ版
+  　  └ preview/
+          └ ${yyyyMMdd_HHmmss}.pdf    # プレビュー
 ```
 
 ## セットアップ
