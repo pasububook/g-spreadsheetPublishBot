@@ -9,7 +9,7 @@ try {
     rawConfig = __CONFIG_GS_RAW__;
   } else {
     // When previewed via local Live Server, fetch the file over HTTP.
-    const res = await fetch('../../../config.gs');
+    const res = await fetch('../config.gs');
     rawConfig = await res.text();
   }
 
