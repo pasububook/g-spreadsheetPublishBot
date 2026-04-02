@@ -20,6 +20,9 @@ function setMainSheet(){
 
   // ヘッダー
   if (isShowCheckbox) {
+    if (isProtectEditSheet) {
+      protectMainSheet(mainSheet);
+    }
     return
   } else {
     // 列の幅の調整
@@ -175,6 +178,48 @@ function setMainSheet(){
     if (maxRows > lastRow) {
       mainSheet.deleteRows(lastRow + 1, maxRows - lastRow);
     }
+
+    // 必要時のみ、mainシートを保護して編集者を実行ユーザーのみに制限
+    if (isProtectEditSheet) {
+      protectMainSheet(mainSheet);
+    }
+  }
+}
+
+/**
+ * mainシートを保護し、指定列のみ編集可能にする。
+ * 編集可能列: C列(ステータス), D:E列(内容), F:H列(更新日)
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ */
+function protectMainSheet(sheet) {
+  const ownerEmail = Session.getEffectiveUser().getEmail();
+
+  // 既存のシート保護があれば一度削除し、設定を一意にする
+  sheet
+    .getProtections(SpreadsheetApp.ProtectionType.SHEET)
+    .forEach(protection => protection.remove());
+
+  const protection = sheet.protect().setDescription("Protected by auto setup");
+
+  // 編集可能範囲（6行目以降）を除外範囲に追加
+  const lastRow = Math.max(sheet.getLastRow(), 6);
+  const editableRowCount = lastRow - 5;
+  const unprotectedRanges = [
+    sheet.getRange(6, 3, editableRowCount, 1), // C: ステータス
+    sheet.getRange(6, 4, editableRowCount, 2), // D:E: 内容
+    sheet.getRange(6, 6, editableRowCount, 3)  // F:H: 更新日
+  ];
+  protection.setUnprotectedRanges(unprotectedRanges);
+
+  // 編集者を実行ユーザーのみにする
+  const currentEditors = protection.getEditors();
+  if (currentEditors.length > 0) {
+    protection.removeEditors(currentEditors);
+  }
+  protection.addEditor(ownerEmail);
+
+  if (protection.canDomainEdit()) {
+    protection.setDomainEdit(false);
   }
 }
 

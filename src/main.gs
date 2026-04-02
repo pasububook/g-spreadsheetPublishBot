@@ -327,8 +327,20 @@ function mergeMain() {
   // 出版者の情報を取得
   const publisherEmail = Session.getActiveUser().getEmail();
   const editorSheet = ss.getSheetByName(".editor");
-  const editors = editorSheet.getRange(2, 1, editorSheet.getLastRow() - 1, 2).getValues();
-  const publisherName = editors.find(row => row[0] === publisherEmail)[1];
+  let publisherName = publisherEmail;
+
+  if (editorSheet) {
+    const editorLastRow = editorSheet.getLastRow();
+    if (editorLastRow > 1) {
+      const editors = editorSheet.getRange(2, 1, editorLastRow - 1, 2).getValues();
+      const publisherRow = editors.find(function(row) {
+        return row[0] === publisherEmail;
+      });
+      if (publisherRow && publisherRow[1]) {
+        publisherName = publisherRow[1];
+      }
+    }
+  }
 
   // バージョン表記の更新
   // '.config'!B3: バージョン情報が記載されたセル

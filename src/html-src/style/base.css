@@ -1,0 +1,33 @@
+:root {
+    --primary-color: #4285f4;
+    --hover-bg: #f1f3f4;
+    --border-color: #e0e0e0;
+    --text-color: #3c4043;
+    --modal-bg: #ffffff;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none !important;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "Google Sans", "Roboto", "Helvetica Neue", Arial, sans-serif;
+    color: var(--text-color);
+    background-color: var(--modal-bg);
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+.material-symbols-outlined {
+    font-size: 20px;
+    line-height: 1;
+    vertical-align: middle;
+    user-select: none;
+}
