@@ -53,8 +53,20 @@ export function setupUI() {
     function submitToChat() {
         var btnSubmit = document.getElementById('btn-submit');
         btnSubmit.disabled = true;
-        submitMergeMain();
-        closeHost();
+        submitMergeMain().catch(function(err) {
+            btnSubmit.disabled = false;
+            var message = '送信処理の開始に失敗しました。時間をおいて再試行してください。';
+            if (err && err.message) {
+                message += '\n\n詳細: ' + err.message;
+            }
+            alert(message);
+            console.error('mergeMain 呼び出し失敗:', err);
+        });
+
+        // RPC キック直後に閉じると取りこぼすことがあるため、短い遅延を入れてから閉じる。
+        window.setTimeout(function() {
+            closeHost();
+        }, 250);
     }
 
     document.getElementById('btn-submit').addEventListener('click', submitToChat);

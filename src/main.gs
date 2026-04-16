@@ -27,6 +27,7 @@ function showCommitRevision() {
  * @return {void}
  */
 function mergeMainPermission() {
+  Logger.log('mergeMainPermission called');
   const html = HtmlService.createHtmlOutputFromFile('src/html/chatPreview')
       .setWidth(960)
       .setHeight(640);
@@ -290,10 +291,50 @@ function replaceExportHeaderLabel(spreadsheetId, sheetName) {
 }
 
 /**
+ * .config!B3 に入っているバージョン値を安全に数値化する。
+ * @param {*} value セル値
+ * @return {number} 正常化された整数バージョン
+ */
+function parseConfigVersionValue(value) {
+  if (typeof value === 'number' && isFinite(value)) {
+    return Math.floor(value);
+  }
+
+  const normalized = (value == null ? '' : String(value))
+    .replace(/[０-９]/g, function(ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 65248);
+    })
+    .trim();
+
+  const parsed = Number(normalized);
+  if (!isFinite(parsed)) {
+    throw new Error('.config!B3 のバージョン値を数値として解釈できません: ' + normalized);
+  }
+
+  return Math.floor(parsed);
+}
+
+/**
+ * 指定スプレッドシートの .config!B3 を更新する。
+ * @param {string} spreadsheetId 対象スプレッドシートID
+ * @param {number} version 設定するバージョン値
+ * @return {void}
+ */
+function setConfigVersion(spreadsheetId, version) {
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const configSheet = spreadsheet.getSheetByName('.config');
+  if (!configSheet) {
+    throw new Error('.config シートが見つかりません。');
+  }
+  configSheet.getRange('B3').setValue(version);
+}
+
+/**
  * 変更内容を取り込み、エクスポートと Google Chat 送信を実行する。
  * @return {void}
  */
 function mergeMain() {
+  Logger.log('mergeMain called');
   const exportStartedAt = new Date();
 
   const scriptProperties = PropertiesService.getScriptProperties();
@@ -342,12 +383,13 @@ function mergeMain() {
     }
   }
 
-  // バージョン表記の更新
-  // '.config'!B3: バージョン情報が記載されたセル
-  const configSheet = ss.getSheetByName(".config")
-  const nowDocVer = configSheet.getRange("B3").getValue();
-  configSheet.getRange("B3").setValue(Number(nowDocVer) + 1);
-  SpreadsheetApp.flush();
+  // バージョン表記の更新値を先に計算（反映は出版成功後）
+  const configSheet = ss.getSheetByName('.config');
+  if (!configSheet) {
+    throw new Error('.config シートが見つかりません。');
+  }
+  const currentVersion = parseConfigVersionValue(configSheet.getRange('B3').getValue());
+  const nextVersion = currentVersion + 1;
 
   // フォルダを作成 (PARENT_FOLDER_ID/issue/yyyyMMdd_HHmmss)
   const issueFolderId = getOrCreateSubFolder(exportParentFolderId, 'issue');
@@ -355,6 +397,9 @@ function mergeMain() {
 
   // エクスポート用にスプレッドシートをコピー
   const exportSpreadsheetId = createExportSpreadsheetCopy(spreadsheetId, folder_id, exportStartedAt, sheetName);
+
+  // エクスポートコピー側には次バージョンを反映
+  setConfigVersion(exportSpreadsheetId, nextVersion);
 
   // コピーしたスプレッドシート内の時間依存データを固定化
   freezeSpreadsheetValues(exportSpreadsheetId, exportStartedAt);
@@ -392,6 +437,9 @@ function mergeMain() {
 
   // 送信成功後に未送信ログを送信済みへ更新
   markChangelogsAsMerged(ss.getId(), '.changelog');
+
+  // すべて成功した後で元シートのバージョンを更新
+  configSheet.getRange('B3').setValue(nextVersion);
   
   ss.toast('出版が完了しました。');
 }

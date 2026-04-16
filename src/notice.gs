@@ -1,4 +1,15 @@
 /**
+ * TAG_CATEGORIES: タグカテゴリのカラー定義
+ */
+const TAG_CATEGORIES_NOTICE = {
+  "教科書": { color: "#2E86C1", bg: "#D6EAF8" },
+  "資料集": { color: "#27AE60", bg: "#D5F5E3" },
+  "ワーク": { color: "#E67E22", bg: "#FAE5D3" },
+  "プリント": { color: "#884EA0", bg: "#E8DAEF" },
+  "その他": { color: "#7F8C8D", bg: "#F2F4F4" }
+};
+
+/**
  * 変更内容テキスト中の <name;type> 形式タグを
  * Google Chat の <font color="...">name</font> 形式に変換する。
  * @param {string} text
@@ -7,7 +18,7 @@
 function renderTagsForChat(text) {
   return text.replace(/<([^;>]+);([^>]*)>/g, function(match, name, type) {
     const trimmedType = type.trim();
-    const catColor = (TAG_COLORS[trimmedType] || TAG_COLORS["その他"]).color;
+    const catColor = (TAG_CATEGORIES_NOTICE[trimmedType] || TAG_CATEGORIES_NOTICE["その他"]).color;
     return '「<b><font color="' + catColor + '">' + name + '</font></b>」';
   });
 }

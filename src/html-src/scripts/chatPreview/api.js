@@ -32,7 +32,12 @@ export function fetchPreviewPdf() {
  * 変更内容をChatに送信する
  */
 export function submitMergeMain() {
-    google.script.run.mergeMain();
+    return new Promise((resolve, reject) => {
+        google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .mergeMain();
+    });
 }
 
 /**

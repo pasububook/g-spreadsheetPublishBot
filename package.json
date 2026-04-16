@@ -1,6 +1,6 @@
 {
   "name": "g-spreadsheetpublishbot",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Google Spreadsheet のシートを PDF にエクスポートし、Google Chat Webhook 経由で通知・配布するための Google Apps Script プロジェクトです。",
   "main": "index.js",
   "directories": {
