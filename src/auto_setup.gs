@@ -26,7 +26,7 @@ function setMainSheet(){
     return
   } else {
     // 列の幅の調整
-    const headerWidths = [34, 86, 74, 365, 60, 30, 41, 21];
+    const headerWidths = [34, 101, 74, 365, 60, 30, 41, 21];
     headerWidths.forEach((headerWidth, i) => {
       mainSheet.setColumnWidth(i + 1, headerWidth);
     });
